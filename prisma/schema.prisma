@@ -1,0 +1,222 @@
+// Prisma Schema — LayarRika
+// Full-Stack Streaming Platform
+// Provider: Neon Serverless PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MediaType {
+  MOVIE
+  TV
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+// -----------------------------------------------------------------------------
+// Auth.js / NextAuth.js v5 Adapter Models
+// Dokumentasi: https://authjs.dev/reference/adapter/prisma
+// -----------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // Hash kata sandi (bcrypt) untuk registrasi & login email/password
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relasi Akun OAuth & Session
+  accounts      Account[]
+  sessions      Session[]
+
+  // Relasi Fitur Aplikasi LayarRika
+  watchlists    Watchlist[]
+  watchHistory  WatchHistory[]
+  subscriptions UserSubscription[]
+
+  @@map("users")
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
+
+// -----------------------------------------------------------------------------
+// Watchlist (Koleksi Film & Serial Pribadi Pengguna)
+// -----------------------------------------------------------------------------
+
+model Watchlist {
+  id          String    @id @default(cuid())
+  userId      String
+  tmdbId      Int
+  mediaType   MediaType
+  title       String
+  posterPath  String?
+  rating      Float?
+  releaseYear Int?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Mencegah duplikasi entri konten yang sama dalam watchlist pengguna
+  @@unique([userId, mediaType, tmdbId])
+  @@index([userId])
+  @@map("watchlists")
+}
+
+// -----------------------------------------------------------------------------
+// WatchHistory & Progres Tontonan
+// -----------------------------------------------------------------------------
+
+model WatchHistory {
+  id              String         @id @default(cuid())
+  userId          String
+  tmdbId          Int
+  mediaType       MediaType
+  title           String
+  posterPath      String?
+  seasonNumber    Int?           // null jika mediaType == MOVIE
+  episodeNumber   Int?           // null jika mediaType == MOVIE
+  progressSeconds Int            @default(0) // Waktu tonton dalam detik (>= 0)
+  durationSeconds Int?           // Total durasi jika diketahui
+  completed       Boolean        @default(false)
+  lastWatchedAt   DateTime       @default(now()) @updatedAt
+
+  playbackAssetId String?
+  playbackAsset   PlaybackAsset? @relation(fields: [playbackAssetId], references: [id], onDelete: SetNull)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Riwayat unik per pengguna dan per episode/film
+  @@unique([userId, mediaType, tmdbId, seasonNumber, episodeNumber])
+  @@index([userId, lastWatchedAt])
+  @@map("watch_history")
+}
+
+// -----------------------------------------------------------------------------
+// PlaybackAsset (Sumber Media & Video Legal)
+// -----------------------------------------------------------------------------
+
+model PlaybackAsset {
+  id                 String    @id @default(cuid())
+  title              String
+  mediaType          MediaType
+  tmdbId             Int?
+  seasonNumber       Int?
+  episodeNumber      Int?
+  videoUrl           String    @db.Text // URL video sah (HLS .m3u8 atau MP4 legal)
+  mimeType           String    @default("application/x-mpegURL")
+  quality            String    @default("1080p")
+  durationSeconds    Int?
+  isPublic           Boolean   @default(true)
+  isPremiumRequired  Boolean   @default(false)
+  sourceAttribution  String?   // misal: "Blender Open Movie - Creative Commons 3.0"
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  historyEntries     WatchHistory[]
+
+  @@index([tmdbId, mediaType])
+  @@map("playback_assets")
+}
+
+// -----------------------------------------------------------------------------
+// Free / Premium Subscription Models
+// -----------------------------------------------------------------------------
+
+model SubscriptionPlan {
+  id           String             @id @default(cuid())
+  name         String
+  slug         String             @unique
+  price        Int                @default(0) // IDR
+  durationDays Int                @default(30)
+  features     String[]
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  subscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id        String             @id @default(cuid())
+  userId    String
+  planId    String
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime           @default(now())
+  endDate   DateTime
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([userId, status])
+  @@map("user_subscriptions")
+}
