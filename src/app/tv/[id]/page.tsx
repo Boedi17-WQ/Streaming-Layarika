@@ -10,6 +10,8 @@ import {
   getTvDetails,
   getTvCredits,
   getTvRecommendations,
+  getTvSeasonDetails,
+  getTvVideos,
   isTmdbConfigured,
 } from "@/lib/tmdb/client";
 import {
@@ -22,6 +24,7 @@ import { MOCK_SERIES } from "@/data/mockMovies";
 import { auth } from "@/auth";
 import { isItemInWatchlist } from "@/services/watchlist.service";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
+import { TvSeasonEpisodeBrowser } from "@/components/tv/TvSeasonEpisodeBrowser";
 import {
   Star,
   Television,
@@ -31,6 +34,10 @@ import {
   Users,
   ShieldCheck,
   Stack,
+  Globe,
+  Buildings,
+  Translate,
+  FilmReel,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const instant = false;
@@ -50,9 +57,30 @@ export async function generateMetadata({
       const year = tv.first_air_date
         ? ` (${tv.first_air_date.substring(0, 4)})`
         : "";
+      const backdropUrl = getTmdbBackdropUrl(tv.backdrop_path, "w1280");
+      const posterUrl = getTmdbPosterUrl(tv.poster_path, "w500");
+      const pageTitle = `${tv.name}${year} — LayarRika Serial`;
+      const pageDescription = tv.overview || "Detail serial di katalog LayarRika.";
+
       return {
-        title: `${tv.name}${year} — LayarRika Serial`,
-        description: tv.overview || "Detail serial di katalog LayarRika.",
+        title: pageTitle,
+        description: pageDescription,
+        openGraph: {
+          title: pageTitle,
+          description: pageDescription,
+          type: "video.tv_show",
+          images: backdropUrl
+            ? [{ url: backdropUrl, width: 1280, height: 720, alt: tv.name }]
+            : posterUrl
+            ? [{ url: posterUrl, alt: tv.name }]
+            : [],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: pageTitle,
+          description: pageDescription,
+          images: backdropUrl ? [backdropUrl] : posterUrl ? [posterUrl] : [],
+        },
       };
     }
   }
@@ -70,12 +98,16 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
   let tv = null;
   let credits = null;
   let recommendations: ReturnType<typeof mapTmdbTvToMovie>[] = [];
+  let initialEpisodes: import("@/lib/tmdb/types").TmdbTvEpisode[] = [];
+  let youtubeKey: string | null = null;
 
   if (hasTmdb) {
-    const [tvData, creditsData, recsData] = await Promise.all([
+    const [tvData, creditsData, recsData, season1Data, videosData] = await Promise.all([
       getTvDetails(id),
       getTvCredits(id),
       getTvRecommendations(id),
+      getTvSeasonDetails(id, 1),
+      getTvVideos(id),
     ]);
 
     if (!tvData) {
@@ -85,6 +117,14 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
     tv = tvData;
     credits = creditsData;
     recommendations = (recsData || []).map(mapTmdbTvToMovie);
+    initialEpisodes = season1Data?.episodes || [];
+
+    // Trailer resmi serial TV
+    const officialTrailer =
+      (videosData || []).find((v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser") && v.official) ||
+      (videosData || []).find((v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) ||
+      (videosData || []).find((v) => v.site === "YouTube");
+    youtubeKey = officialTrailer?.key || null;
   } else {
     // Mode fallback: cari di mock data
     const mockFound = MOCK_SERIES.find((s) => s.id === id);
@@ -205,7 +245,7 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
                   <span>Status Episode Serial</span>
                 </div>
                 <p>
-                  Metadata musim dan episode bersumber dari TMDB. Pemutar video full episode mandiri akan diimplementasikan pada <strong>Tahap 6</strong>.
+                  Metadata musim dan episode bersumber dari TMDB API. Pemutar video terintegrasi dengan cuplikan resmi studio dan navigator musim aktif.
                 </p>
               </div>
             </div>
@@ -304,16 +344,15 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
               </p>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons: Tonton Sekarang & Watchlist */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button
-                type="button"
-                title="Fitur pemutaran episode aktif di Tahap 6"
-                className="flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-[#D9A52E] px-6 py-2.5 text-sm font-bold text-[#0A0A0A] shadow-md transition hover:bg-[#c49226]"
+              <a
+                href="#tv-player-section"
+                className="flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-[#D9A52E] px-6 py-2.5 text-sm font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/10 transition hover:bg-[#c49226]"
               >
                 <Play size={18} weight="fill" />
-                <span>Nonton Episode 1</span>
-              </button>
+                <span>Tonton Episode 1</span>
+              </a>
 
               <Suspense
                 fallback={
@@ -330,34 +369,112 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
               </Suspense>
             </div>
 
-            {/* Daftar Musim (Seasons List) */}
-            {tv.seasons && tv.seasons.length > 0 && (
-              <div className="space-y-4 pt-4 border-t border-[#292929]">
-                <h3 className="text-lg font-bold text-[#F5F5F5] flex items-center gap-2">
-                  <Stack size={20} className="text-[#D9A52E]" />
-                  Daftar Musim ({tv.seasons.length})
-                </h3>
+            {/* Informasi & Detail Produksi Lengkap Serial TV (TMDB) */}
+            <div className="rounded-2xl border border-[#292929] bg-[#141414] p-5 space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[#D9A52E] flex items-center gap-2">
+                <ShieldCheck size={18} weight="fill" />
+                <span>Informasi & Detail Serial</span>
+              </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {tv.seasons.map((season) => (
-                    <div
-                      key={season.id}
-                      className="flex items-center justify-between rounded-xl border border-[#292929] bg-[#171717] p-4 transition hover:border-[#D9A52E]/50"
-                    >
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-[#F5F5F5]">
-                          {season.name}
-                        </h4>
-                        <p className="text-xs text-[#737373]">
-                          {season.episode_count} Episode • {season.air_date ? season.air_date.substring(0, 4) : "—"}
-                        </p>
-                      </div>
-                      <span className="rounded bg-[#0A0A0A] px-2.5 py-1 text-[11px] font-semibold text-[#D9A52E] border border-[#292929]">
-                        Musim {season.season_number}
-                      </span>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                {tv.original_name && tv.original_name !== tv.name && (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <Translate size={14} />
+                      <span>Judul Asli</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5]">{tv.original_name}</p>
+                  </div>
+                )}
+
+                {tv.status && (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <FilmReel size={14} />
+                      <span>Status Penyiaran</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5]">{tv.status}</p>
+                  </div>
+                )}
+
+                {tv.original_language && (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <Globe size={14} />
+                      <span>Bahasa Asli</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5] uppercase">
+                      {tv.original_language}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <span className="text-[#737373] flex items-center gap-1">
+                    <Stack size={14} />
+                    <span>Total Musim</span>
+                  </span>
+                  <p className="font-semibold text-[#F5F5F5]">
+                    {tv.number_of_seasons || tv.seasons?.length || 1} Musim
+                  </p>
                 </div>
+
+                <div className="space-y-1">
+                  <span className="text-[#737373] flex items-center gap-1">
+                    <Television size={14} />
+                    <span>Total Episode</span>
+                  </span>
+                  <p className="font-semibold text-[#D9A52E]">
+                    {tv.number_of_episodes || "—"} Episode
+                  </p>
+                </div>
+
+                {tv.last_air_date && (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <CalendarBlank size={14} />
+                      <span>Episode Terakhir Tayang</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5]">
+                      {tv.last_air_date}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Perusahaan Produksi & Studio */}
+              {tv.production_companies && tv.production_companies.length > 0 && (
+                <div className="pt-3 border-t border-[#242424] space-y-2">
+                  <span className="text-xs font-semibold text-[#737373] flex items-center gap-1.5">
+                    <Buildings size={14} />
+                    <span>Studio & Jaringan Penyiaran</span>
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {tv.production_companies.map((company) => (
+                      <span
+                        key={company.id}
+                        className="rounded-lg border border-[#292929] bg-[#1a1a1a] px-2.5 py-1 text-[11px] text-[#A3A3A3]"
+                      >
+                        {company.name} {company.origin_country ? `(${company.origin_country})` : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Browser Musim & Episode Interaktif */}
+            {tv.seasons && tv.seasons.length > 0 && (
+              <div className="pt-2 border-t border-[#292929]">
+                <TvSeasonEpisodeBrowser
+                  seriesId={tv.id}
+                  seriesName={tv.name}
+                  posterPath={tv.poster_path}
+                  seasons={tv.seasons}
+                  initialSeasonNumber={1}
+                  initialEpisodes={initialEpisodes}
+                  youtubeKey={youtubeKey}
+                />
               </div>
             )}
 

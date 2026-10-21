@@ -13,19 +13,41 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://layarrika.vercel.app";
+
 export const metadata: Metadata = {
-  title: "LayarRika — Platform Streaming & Katalog Sinematik",
+  metadataBase: new URL(baseUrl),
+  title: {
+    default: "LayarRika — Platform Streaming & Katalog Sinematik",
+    template: "%s — LayarRika",
+  },
   description:
-    "Temukan Ceritamu. Nikmati Setiap Episode. Platform streaming film dan serial dengan visual modern, katalog metadata TMDB, dan pengalaman menonton sinematik.",
+    "Temukan Ceritamu. Nikmati Setiap Episode. Platform katalog film dan serial sinematik dengan integrasi resmi TMDB API, visual modern, dan keamanan tinggi.",
   keywords: [
     "LayarRika",
     "streaming film",
     "katalog serial",
     "sinematik",
     "nonton legal",
+    "trailer resmi",
     "TMDB",
   ],
-  authors: [{ name: "Tim Pengembang LayarRika" }],
+  authors: [{ name: "Tim Pengembang LayarRika (Semester 5 RPL)" }],
+  openGraph: {
+    title: "LayarRika — Platform Streaming & Katalog Sinematik",
+    description:
+      "Temukan Ceritamu. Nikmati Setiap Episode. Platform katalog film dan serial sinematik dengan visual modern dan pengalaman menonton aman.",
+    url: baseUrl,
+    siteName: "LayarRika",
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LayarRika — Platform Streaming & Katalog Sinematik",
+    description:
+      "Temukan Ceritamu. Nikmati Setiap Episode. Platform katalog film dan serial sinematik dengan visual modern dan pengalaman menonton aman.",
+  },
   icons: {
     icon: "/favicon.ico",
   },

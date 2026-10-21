@@ -6,9 +6,12 @@ import {
   TmdbTvShow,
   TmdbMovieDetails,
   TmdbTvDetails,
+  TmdbTvSeasonDetails,
   TmdbCreditsResponse,
   TmdbPaginatedResponse,
   TmdbMultiSearchResult,
+  TmdbVideo,
+  TmdbVideosResponse,
 } from "./types";
 
 /**
@@ -147,6 +150,11 @@ export async function getMovieRecommendations(id: string | number): Promise<Tmdb
   return res?.results || [];
 }
 
+export async function getMovieVideos(id: string | number): Promise<TmdbVideo[]> {
+  const res = await tmdbFetch<TmdbVideosResponse>(TMDB_ENDPOINTS.movieVideos(id));
+  return res?.results || [];
+}
+
 // -----------------------------------------------------------------------------
 // Endpoint Katalog Serial TV
 // -----------------------------------------------------------------------------
@@ -180,6 +188,20 @@ export async function getTvRecommendations(id: string | number): Promise<TmdbTvS
     TMDB_ENDPOINTS.tvRecommendations(id)
   );
   return res?.results || [];
+}
+
+export async function getTvVideos(id: string | number): Promise<TmdbVideo[]> {
+  const res = await tmdbFetch<TmdbVideosResponse>(TMDB_ENDPOINTS.tvVideos(id));
+  return res?.results || [];
+}
+
+export async function getTvSeasonDetails(
+  id: string | number,
+  seasonNumber: number
+): Promise<TmdbTvSeasonDetails | null> {
+  return tmdbFetch<TmdbTvSeasonDetails>(
+    TMDB_ENDPOINTS.tvSeasonDetails(id, seasonNumber)
+  );
 }
 
 // -----------------------------------------------------------------------------

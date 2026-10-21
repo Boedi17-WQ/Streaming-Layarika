@@ -9,6 +9,7 @@ export const TMDB_ENDPOINTS = {
   movieDetails: (id: string | number) => `/movie/${id}`,
   movieCredits: (id: string | number) => `/movie/${id}/credits`,
   movieRecommendations: (id: string | number) => `/movie/${id}/recommendations`,
+  movieVideos: (id: string | number) => `/movie/${id}/videos`,
 
   // TV Show Endpoints
   tvPopular: "/tv/popular",
@@ -16,6 +17,8 @@ export const TMDB_ENDPOINTS = {
   tvDetails: (id: string | number) => `/tv/${id}`,
   tvCredits: (id: string | number) => `/tv/${id}/credits`,
   tvRecommendations: (id: string | number) => `/tv/${id}/recommendations`,
+  tvSeasonDetails: (id: string | number, seasonNumber: number) => `/tv/${id}/season/${seasonNumber}`,
+  tvVideos: (id: string | number) => `/tv/${id}/videos`,
 
   // Search Endpoints
   searchMulti: "/search/multi",

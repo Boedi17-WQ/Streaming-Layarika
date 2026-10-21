@@ -21,6 +21,10 @@ import {
 export const metadata: Metadata = {
   title: "Profil & Koleksi Pengguna — LayarRika",
   description: "Kelola akun, watchlist tersimpan, dan riwayat tontonan personal LayarRika Anda.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export const instant = false;

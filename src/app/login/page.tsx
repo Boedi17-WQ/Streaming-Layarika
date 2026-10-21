@@ -13,6 +13,10 @@ import {
 export const metadata: Metadata = {
   title: "Masuk Akun — LayarRika",
   description: "Masuk ke akun LayarRika menggunakan email dan kata sandi Anda.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 interface LoginPageProps {

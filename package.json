@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:seed": "tsx prisma/seed.ts",
     "test": "tsx src/lib/validations/watchlist.test.ts",
+    "test:providers": "tsx src/lib/streaming/providers.test.ts",
     "test:integration": "tsx src/__tests__/tahap5-integration.test.ts"
   },
   "dependencies": {
@@ -17,6 +18,7 @@
     "@prisma/client": "^6.19.3",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
+    "hls.js": "^1.7.3",
     "next": "16.4.2",
     "next-auth": "^5.0.0-beta.32",
     "react": "19.3.0",

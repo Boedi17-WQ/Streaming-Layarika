@@ -153,3 +153,46 @@ export interface TmdbCreditsResponse {
   id: number;
   cast: TmdbCastMember[];
 }
+
+export interface TmdbTvEpisode {
+  id: number;
+  name: string;
+  overview: string;
+  episode_number: number;
+  season_number: number;
+  air_date?: string | null;
+  runtime?: number | null;
+  still_path?: string | null;
+  vote_average?: number;
+  vote_count?: number;
+}
+
+export interface TmdbTvSeasonDetails {
+  id: number;
+  _id?: string;
+  name: string;
+  overview: string;
+  season_number: number;
+  poster_path: string | null;
+  air_date?: string | null;
+  episodes: TmdbTvEpisode[];
+}
+
+export interface TmdbVideo {
+  id: string;
+  iso_639_1: string;
+  iso_3166_1: string;
+  key: string;
+  name: string;
+  site: string;
+  size: number;
+  type: string;
+  official: boolean;
+  published_at: string;
+}
+
+export interface TmdbVideosResponse {
+  id: number;
+  results: TmdbVideo[];
+}
+

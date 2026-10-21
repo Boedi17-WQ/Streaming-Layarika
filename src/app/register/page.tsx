@@ -13,6 +13,10 @@ import {
 export const metadata: Metadata = {
   title: "Daftar Akun Baru — LayarRika",
   description: "Daftarkan akun LayarRika Anda untuk menyimpan watchlist dan riwayat tontonan sinematik.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 interface RegisterPageProps {

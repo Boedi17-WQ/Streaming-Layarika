@@ -108,32 +108,23 @@ export function HeroSection({ featuredMovie, isTmdbData = false }: HeroSectionPr
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
+            {/* Tombol Mulai Nonton Aktif */}
+            <Link
+              href={`${detailHref}#player-section`}
+              className="flex items-center gap-2.5 rounded-lg border border-[#D9A52E] bg-[#D9A52E] px-6 py-3 text-sm font-bold text-[#0A0A0A] shadow-lg shadow-[#D9A52E]/20 transition hover:bg-[#c49226] hover:border-[#c49226] active:scale-[0.98]"
+            >
+              <Play size={18} weight="fill" />
+              <span>Mulai Nonton</span>
+            </Link>
+
             {/* Detail Button */}
             <Link
               href={detailHref}
-              className="flex items-center gap-2 rounded-lg border border-[#D9A52E] bg-[#D9A52E] px-6 py-3 text-sm font-bold text-[#0A0A0A] shadow-lg transition hover:bg-[#c49226] hover:border-[#c49226] active:scale-[0.98]"
+              className="flex items-center gap-2 rounded-lg border border-[#292929] bg-[#171717]/90 px-5 py-3 text-sm font-semibold text-[#F5F5F5] backdrop-blur-sm transition hover:border-[#D9A52E]/50 hover:bg-[#1F1F1F] active:scale-[0.98]"
             >
               <Info size={18} weight="bold" />
               <span>Lihat Detail Cerita</span>
             </Link>
-
-            {/* Play Button (Placeholder Phase 6) */}
-            <div className="relative group">
-              <button
-                type="button"
-                title="Pemutar video legal akan aktif di Tahap 6"
-                className="flex items-center gap-2.5 rounded-lg border border-[#292929] bg-[#171717]/90 px-5 py-3 text-sm font-semibold text-[#F5F5F5] backdrop-blur-sm transition hover:border-[#D9A52E]/50 hover:bg-[#1F1F1F]"
-              >
-                <Play size={18} weight="fill" className="text-[#D9A52E]" />
-                <span>Mulai Nonton</span>
-              </button>
-              <div className="absolute left-0 top-full mt-2 hidden w-64 rounded-lg border border-[#292929] bg-[#171717] p-2.5 text-xs text-[#A3A3A3] shadow-2xl group-hover:block z-30">
-                <span className="font-semibold text-[#D9A52E] block mb-0.5">
-                  Fitur Pemutar Video (Tahap 6)
-                </span>
-                Pemutaran video HTML5 / HLS mandiri akan aktif pada Tahap 6.
-              </div>
-            </div>
           </div>
         </div>
       </Container>

@@ -10,6 +10,7 @@ import {
   getMovieDetails,
   getMovieCredits,
   getMovieRecommendations,
+  getMovieVideos,
   isTmdbConfigured,
 } from "@/lib/tmdb/client";
 import {
@@ -22,6 +23,7 @@ import { MOCK_FEATURED_MOVIES } from "@/data/mockMovies";
 import { auth } from "@/auth";
 import { isItemInWatchlist } from "@/services/watchlist.service";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
+import { EmbeddedPlayer } from "@/components/player/EmbeddedPlayer";
 import {
   Star,
   Clock,
@@ -31,6 +33,10 @@ import {
   Play,
   Users,
   ShieldCheck,
+  Globe,
+  Buildings,
+  CurrencyDollar,
+  Translate,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const instant = false;
@@ -50,9 +56,26 @@ export async function generateMetadata({
       const year = movie.release_date
         ? ` (${movie.release_date.substring(0, 4)})`
         : "";
+      const backdropUrl = getTmdbBackdropUrl(movie.backdrop_path, "w1280");
+      const posterUrl = getTmdbPosterUrl(movie.poster_path, "w500");
+      const pageTitle = `${movie.title}${year} — LayarRika`;
+      const pageDescription = movie.overview || "Detail film di katalog LayarRika.";
+
       return {
-        title: `${movie.title}${year} — LayarRika`,
-        description: movie.overview || "Detail film di katalog LayarRika.",
+        title: pageTitle,
+        description: pageDescription,
+        openGraph: {
+          title: pageTitle,
+          description: pageDescription,
+          type: "video.movie",
+          images: backdropUrl ? [{ url: backdropUrl, width: 1280, height: 720, alt: movie.title }] : posterUrl ? [{ url: posterUrl, alt: movie.title }] : [],
+        },
+        twitter: {
+          card: "summary_large_image",
+          title: pageTitle,
+          description: pageDescription,
+          images: backdropUrl ? [backdropUrl] : posterUrl ? [posterUrl] : [],
+        },
       };
     }
   }
@@ -72,12 +95,14 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
   let movie = null;
   let credits = null;
   let recommendations: ReturnType<typeof mapTmdbMovieToMovie>[] = [];
+  let youtubeKey: string | null = null;
 
   if (hasTmdb) {
-    const [movieData, creditsData, recsData] = await Promise.all([
+    const [movieData, creditsData, recsData, videosData] = await Promise.all([
       getMovieDetails(id),
       getMovieCredits(id),
       getMovieRecommendations(id),
+      getMovieVideos(id),
     ]);
 
     if (!movieData) {
@@ -87,6 +112,13 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
     movie = movieData;
     credits = creditsData;
     recommendations = (recsData || []).map(mapTmdbMovieToMovie);
+
+    // Cari trailer resmi dari TMDB (YouTube)
+    const officialTrailer =
+      (videosData || []).find((v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser") && v.official) ||
+      (videosData || []).find((v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser")) ||
+      (videosData || []).find((v) => v.site === "YouTube");
+    youtubeKey = officialTrailer?.key || null;
   } else {
     // Mode fallback: cari di mock data
     const mockFound = MOCK_FEATURED_MOVIES.find((m) => m.id === id);
@@ -186,7 +218,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                   <span>Status Hak Tonton</span>
                 </div>
                 <p>
-                  Metadata film bersumber dari TMDB. Fitur pemutaran video legal & HLS mandiri akan aktif pada <strong>Tahap 6</strong>.
+                  Metadata film bersumber dari TMDB API. Pemutar video terintegrasi dengan cuplikan resmi studio dan teknologi HLS aman.
                 </p>
               </div>
             </div>
@@ -286,16 +318,15 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
               </p>
             </div>
 
-            {/* Action Bar */}
+            {/* Action Bar: Tonton Sekarang & Watchlist */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <button
-                type="button"
-                title="Fitur pemutaran video aktif di Tahap 6"
-                className="flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-[#D9A52E] px-6 py-2.5 text-sm font-bold text-[#0A0A0A] shadow-md transition hover:bg-[#c49226]"
+              <a
+                href="#player-section"
+                className="flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-[#D9A52E] px-6 py-2.5 text-sm font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/10 transition hover:bg-[#c49226]"
               >
                 <Play size={18} weight="fill" />
-                <span>Mulai Nonton</span>
-              </button>
+                <span>Tonton Sekarang</span>
+              </a>
 
               <Suspense
                 fallback={
@@ -310,6 +341,115 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                   releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
                 />
               </Suspense>
+            </div>
+
+            {/* 3. Dedicated Streaming Player Section (Adopsi Streambert) */}
+            <div id="player-section" className="space-y-4 pt-6 border-t border-[#292929] scroll-mt-24">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="h-4 w-1 rounded-full bg-[#D9A52E]" />
+                  <h3 className="text-lg font-bold text-[#F5F5F5]">
+                    Pemutar Streaming — {movie.title}
+                  </h3>
+                </div>
+                <span className="rounded bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-2.5 py-0.5 text-xs font-bold text-[#D9A52E]">
+                  Multi-Server Full HD
+                </span>
+              </div>
+
+              <EmbeddedPlayer
+                tmdbId={movie.id}
+                mediaType="MOVIE"
+                title={movie.title}
+                posterPath={movie.poster_path}
+                youtubeKey={youtubeKey}
+              />
+            </div>
+
+            {/* Informasi & Detail Produksi Lengkap (TMDB) */}
+            <div className="rounded-2xl border border-[#292929] bg-[#141414] p-5 space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-[#D9A52E] flex items-center gap-2">
+                <ShieldCheck size={18} weight="fill" />
+                <span>Informasi & Detail Produksi</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                {movie.original_title && movie.original_title !== movie.title && (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <Translate size={14} />
+                      <span>Judul Asli</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5]">{movie.original_title}</p>
+                  </div>
+                )}
+
+                {movie.status && (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <FilmReel size={14} />
+                      <span>Status Rilis</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5]">{movie.status}</p>
+                  </div>
+                )}
+
+                {movie.original_language && (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <Globe size={14} />
+                      <span>Bahasa Asli</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5] uppercase">
+                      {movie.original_language}
+                    </p>
+                  </div>
+                )}
+
+                {movie.budget && movie.budget > 0 ? (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <CurrencyDollar size={14} />
+                      <span>Anggaran (Budget)</span>
+                    </span>
+                    <p className="font-semibold text-[#F5F5F5]">
+                      ${movie.budget.toLocaleString("en-US")}
+                    </p>
+                  </div>
+                ) : null}
+
+                {movie.revenue && movie.revenue > 0 ? (
+                  <div className="space-y-1">
+                    <span className="text-[#737373] flex items-center gap-1">
+                      <CurrencyDollar size={14} />
+                      <span>Pendapatan (Revenue)</span>
+                    </span>
+                    <p className="font-semibold text-[#D9A52E]">
+                      ${movie.revenue.toLocaleString("en-US")}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Perusahaan Produksi */}
+              {movie.production_companies && movie.production_companies.length > 0 && (
+                <div className="pt-3 border-t border-[#242424] space-y-2">
+                  <span className="text-xs font-semibold text-[#737373] flex items-center gap-1.5">
+                    <Buildings size={14} />
+                    <span>Studio & Rumah Produksi</span>
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {movie.production_companies.map((company) => (
+                      <span
+                        key={company.id}
+                        className="rounded-lg border border-[#292929] bg-[#1a1a1a] px-2.5 py-1 text-[11px] text-[#A3A3A3]"
+                      >
+                        {company.name} {company.origin_country ? `(${company.origin_country})` : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pemeran Utama (Credits) */}
