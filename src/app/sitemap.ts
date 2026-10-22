@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 import { getPopularMovies, getPopularTvShows, isTmdbConfigured } from "@/lib/tmdb/client";
 import { MOCK_FEATURED_MOVIES, MOCK_SERIES } from "@/data/mockMovies";
+import { getAppBaseUrl } from "@/lib/utils/url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://layarrika.vercel.app";
+  const baseUrl = getAppBaseUrl();
   const now = new Date();
 
   // Rute Statis Publik

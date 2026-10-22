@@ -14,7 +14,9 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://layarrika.vercel.app";
+import { getAppBaseUrl } from "@/lib/utils/url";
+
+const baseUrl = getAppBaseUrl();
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),

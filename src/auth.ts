@@ -21,6 +21,14 @@ declare module "next-auth" {
   }
 }
 
+// Normalisasi URL jika pengguna memasukkan domain tanpa protokol (misal: 'boedi.my.id')
+if (process.env.NEXTAUTH_URL && !process.env.NEXTAUTH_URL.startsWith("http://") && !process.env.NEXTAUTH_URL.startsWith("https://")) {
+  process.env.NEXTAUTH_URL = `https://${process.env.NEXTAUTH_URL.trim()}`;
+}
+if (process.env.AUTH_URL && !process.env.AUTH_URL.startsWith("http://") && !process.env.AUTH_URL.startsWith("https://")) {
+  process.env.AUTH_URL = `https://${process.env.AUTH_URL.trim()}`;
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   adapter: PrismaAdapter(db),
