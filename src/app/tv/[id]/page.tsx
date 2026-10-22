@@ -24,6 +24,7 @@ import { MOCK_SERIES } from "@/data/mockMovies";
 import { auth } from "@/auth";
 import { isItemInWatchlist } from "@/services/watchlist.service";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
+import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { TvSeasonEpisodeBrowser } from "@/components/tv/TvSeasonEpisodeBrowser";
 import {
   Star,
@@ -367,6 +368,13 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
                   releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
                 />
               </Suspense>
+
+              <AddToPlaylistButton
+                tmdbId={tv.id}
+                mediaType="TV"
+                title={tv.name}
+                posterPath={tv.poster_path}
+              />
             </div>
 
             {/* Informasi & Detail Produksi Lengkap Serial TV (TMDB) */}

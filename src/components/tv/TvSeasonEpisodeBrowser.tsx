@@ -113,6 +113,7 @@ export function TvSeasonEpisodeBrowser({
             mediaType="TV"
             title={seriesName}
             posterPath={posterPath}
+            backdropPath={activeEpisode.still_path || posterPath}
             seasonNumber={activeEpisode.season_number}
             episodeNumber={activeEpisode.episode_number}
             episodeTitle={activeEpisode.name}

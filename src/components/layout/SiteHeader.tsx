@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import {
   FilmReel,
-  Television,
   House,
   MagnifyingGlass,
   SignIn,
@@ -63,26 +62,40 @@ export function SiteHeader({ user }: SiteHeaderProps) {
               <span>Beranda</span>
             </Link>
             <Link
-              href="/#movies"
+              href="/catalog"
               className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-[#171717]/60 transition"
             >
               <FilmReel size={16} />
+              <span>Katalog</span>
+            </Link>
+            <Link
+              href="/catalog?type=movie"
+              className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-[#171717]/60 transition"
+            >
               <span>Film</span>
             </Link>
             <Link
-              href="/#series"
+              href="/catalog?type=tv"
               className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-[#171717]/60 transition"
             >
-              <Television size={16} />
               <span>Serial</span>
             </Link>
-            <Link
-              href="/search"
-              className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[#D9A52E] hover:bg-[#171717]/60 transition"
-            >
-              <MagnifyingGlass size={16} weight="bold" />
-              <span>Cari Katalog</span>
-            </Link>
+            {user && (
+              <>
+                <Link
+                  href="/watchlist"
+                  className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-[#171717]/60 transition"
+                >
+                  <span>Watchlist</span>
+                </Link>
+                <Link
+                  href="/playlists"
+                  className="flex items-center gap-1.5 rounded-md px-3 py-2 text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-[#171717]/60 transition"
+                >
+                  <span>Playlist</span>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
 
@@ -170,28 +183,52 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <span>Beranda</span>
           </Link>
           <Link
-            href="/#movies"
+            href="/catalog"
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-[#A3A3A3] hover:text-[#F5F5F5]"
           >
             <FilmReel size={18} />
-            <span>Film</span>
+            <span>Katalog Lengkap</span>
           </Link>
           <Link
-            href="/#series"
+            href="/catalog?type=movie"
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-[#A3A3A3] hover:text-[#F5F5F5]"
           >
-            <Television size={18} />
-            <span>Serial</span>
+            <span>Film</span>
           </Link>
+          <Link
+            href="/catalog?type=tv"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-[#A3A3A3] hover:text-[#F5F5F5]"
+          >
+            <span>Serial TV</span>
+          </Link>
+          {user && (
+            <>
+              <Link
+                href="/watchlist"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-[#A3A3A3] hover:text-[#F5F5F5]"
+              >
+                <span>Watchlist Pribadi</span>
+              </Link>
+              <Link
+                href="/playlists"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-[#A3A3A3] hover:text-[#F5F5F5]"
+              >
+                <span>Daftar Putar (Playlists)</span>
+              </Link>
+            </>
+          )}
           <Link
             href="/search"
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-[#D9A52E] bg-[#171717]"
           >
             <MagnifyingGlass size={18} weight="bold" />
-            <span>Pencarian Katalog</span>
+            <span>Cari Real-Time</span>
           </Link>
           <div className="pt-2 border-t border-[#292929]">
             {user ? (

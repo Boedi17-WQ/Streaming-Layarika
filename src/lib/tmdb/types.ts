@@ -5,6 +5,10 @@ export interface TmdbGenre {
   name: string;
 }
 
+export interface TmdbGenreListResponse {
+  genres: TmdbGenre[];
+}
+
 export interface TmdbMovie {
   id: number;
   title: string;

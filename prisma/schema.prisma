@@ -57,6 +57,7 @@ model User {
   watchlists    Watchlist[]
   watchHistory  WatchHistory[]
   subscriptions UserSubscription[]
+  playlists     Playlist[]
 
   @@map("users")
 }
@@ -219,4 +220,41 @@ model UserSubscription {
 
   @@index([userId, status])
   @@map("user_subscriptions")
+}
+
+// -----------------------------------------------------------------------------
+// Custom Playlists (Koleksi Playlist Pribadi Pengguna)
+// -----------------------------------------------------------------------------
+
+model Playlist {
+  id          String         @id @default(cuid())
+  userId      String
+  name        String
+  description String?        @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       PlaylistItem[]
+
+  @@index([userId])
+  @@map("playlists")
+}
+
+model PlaylistItem {
+  id         String    @id @default(cuid())
+  playlistId String
+  mediaType  MediaType
+  tmdbId     Int
+  title      String
+  posterPath String?
+  order      Int       @default(0)
+  addedAt    DateTime  @default(now())
+
+  playlist   Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+
+  // Item media unik per playlist (tidak duplikat dalam playlist yang sama)
+  @@unique([playlistId, mediaType, tmdbId])
+  @@index([playlistId, order])
+  @@map("playlist_items")
 }

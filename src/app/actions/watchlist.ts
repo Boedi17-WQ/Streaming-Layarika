@@ -64,6 +64,7 @@ export async function toggleWatchlistAction(
       revalidatePath(`/movie/${tmdbId}`);
       revalidatePath(`/tv/${tmdbId}`);
       revalidatePath("/profile");
+      revalidatePath("/watchlist");
       revalidatePath("/");
 
       return {
@@ -84,6 +85,7 @@ export async function toggleWatchlistAction(
       revalidatePath(`/movie/${tmdbId}`);
       revalidatePath(`/tv/${tmdbId}`);
       revalidatePath("/profile");
+      revalidatePath("/watchlist");
       revalidatePath("/");
 
       return {
@@ -121,6 +123,7 @@ export async function removeFromWatchlistAction(
   try {
     await removeFromWatchlist(session.user.id, tmdbId, mediaType);
     revalidatePath("/profile");
+    revalidatePath("/watchlist");
     revalidatePath(`/movie/${tmdbId}`);
     revalidatePath(`/tv/${tmdbId}`);
 
@@ -155,6 +158,7 @@ export async function removeWatchlistByIdAction(id: string): Promise<WatchlistAc
   try {
     await deleteWatchlistById(session.user.id, id);
     revalidatePath("/profile");
+    revalidatePath("/watchlist");
 
     return {
       success: true,

@@ -23,6 +23,7 @@ import { MOCK_FEATURED_MOVIES } from "@/data/mockMovies";
 import { auth } from "@/auth";
 import { isItemInWatchlist } from "@/services/watchlist.service";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
+import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { EmbeddedPlayer } from "@/components/player/EmbeddedPlayer";
 import {
   Star,
@@ -341,6 +342,13 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                   releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
                 />
               </Suspense>
+
+              <AddToPlaylistButton
+                tmdbId={movie.id}
+                mediaType="MOVIE"
+                title={movie.title}
+                posterPath={movie.poster_path}
+              />
             </div>
 
             {/* 3. Dedicated Streaming Player Section (Adopsi Streambert) */}
@@ -362,6 +370,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                 mediaType="MOVIE"
                 title={movie.title}
                 posterPath={movie.poster_path}
+                backdropPath={movie.backdrop_path}
                 youtubeKey={youtubeKey}
               />
             </div>

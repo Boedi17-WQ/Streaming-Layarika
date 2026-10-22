@@ -122,11 +122,11 @@ export const STREAMING_PROVIDERS: Record<StreamingProviderId, StreamingProvider>
     complianceNotice: "Materi cuplikan resmi studio melalui integrasi TMDB API & YouTube No-Cookie bersandbox aman.",
     getMovieUrl: (_tmdbId, options) => {
       if (!options?.youtubeKey) return null;
-      return `https://www.youtube-nocookie.com/embed/${options.youtubeKey}?autoplay=1&modestbranding=1&rel=0`;
+      return `https://www.youtube-nocookie.com/embed/${options.youtubeKey}?enablejsapi=1&autoplay=0&modestbranding=1&rel=0`;
     },
     getTvUrl: (_tmdbId, _season, _episode, options) => {
       if (!options?.youtubeKey) return null;
-      return `https://www.youtube-nocookie.com/embed/${options.youtubeKey}?autoplay=1&modestbranding=1&rel=0`;
+      return `https://www.youtube-nocookie.com/embed/${options.youtubeKey}?enablejsapi=1&autoplay=0&modestbranding=1&rel=0`;
     },
   },
 

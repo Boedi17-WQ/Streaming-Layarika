@@ -77,7 +77,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`dark ${inter.variable}`}>
+    <html lang="id" className={`dark ${inter.variable}`} data-scroll-behavior="smooth">
       <body className="flex min-h-screen flex-col bg-[#0A0A0A] text-[#F5F5F5] antialiased">
         <Suspense fallback={<SiteHeader user={null} />}>
           <HeaderWithAuth />

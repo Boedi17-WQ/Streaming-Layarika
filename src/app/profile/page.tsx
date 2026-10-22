@@ -153,11 +153,27 @@ export default async function ProfilePage() {
 
         {/* Tab Koleksi Personal: Watchlist, Lanjutkan Menonton, dan Riwayat */}
         <div className="rounded-2xl border border-[#292929] bg-[#141414] p-5 sm:p-7 shadow-xl space-y-6">
-          <div>
-            <h2 className="text-lg font-bold text-[#F5F5F5]">Koleksi & Aktivitas Anda</h2>
-            <p className="text-xs text-[#A3A3A3]">
-              Kelola film dan serial yang Anda simpan serta riwayat detik tontonan Anda.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#F5F5F5]">Koleksi & Aktivitas Anda</h2>
+              <p className="text-xs text-[#A3A3A3]">
+                Kelola film dan serial yang Anda simpan serta riwayat detik tontonan Anda.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/watchlist"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#292929] bg-[#1a1a1a] text-xs font-semibold text-[#D9A52E] hover:border-[#D9A52E] transition"
+              >
+                <span>Watchlist Penuh</span>
+              </Link>
+              <Link
+                href="/playlists"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#292929] bg-[#1a1a1a] text-xs font-semibold text-white hover:border-amber-500 transition"
+              >
+                <span>Kelola Playlist</span>
+              </Link>
+            </div>
           </div>
 
           <ProfileCollections

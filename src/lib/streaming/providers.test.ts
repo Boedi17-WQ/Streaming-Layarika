@@ -46,7 +46,7 @@ const trailerUrl = getStreamUrl({
   youtubeKey: "dQw4w9WgXcQ",
 });
 assert(
-  trailerUrl === "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&modestbranding=1&rel=0",
+  trailerUrl === "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?enablejsapi=1&autoplay=0&modestbranding=1&rel=0",
   `Trailer URL harus mengarah ke youtube-nocookie: ${trailerUrl}`
 );
 

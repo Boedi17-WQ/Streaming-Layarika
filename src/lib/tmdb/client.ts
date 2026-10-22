@@ -12,6 +12,8 @@ import {
   TmdbMultiSearchResult,
   TmdbVideo,
   TmdbVideosResponse,
+  TmdbGenre,
+  TmdbGenreListResponse,
 } from "./types";
 
 /**
@@ -271,3 +273,263 @@ export async function searchMultiCatalog(
     totalPages: res.total_pages,
   };
 }
+
+// -----------------------------------------------------------------------------
+// Endpoint Genre Dinamis TMDB (Movie & TV)
+// -----------------------------------------------------------------------------
+
+export async function getMovieGenres(): Promise<TmdbGenre[]> {
+  const res = await tmdbFetch<TmdbGenreListResponse>(
+    TMDB_ENDPOINTS.genreMovieList,
+    {},
+    86400 // Cache 24 jam untuk daftar genre
+  );
+  return res?.genres || [];
+}
+
+export async function getTvGenres(): Promise<TmdbGenre[]> {
+  const res = await tmdbFetch<TmdbGenreListResponse>(
+    TMDB_ENDPOINTS.genreTvList,
+    {},
+    86400 // Cache 24 jam untuk daftar genre
+  );
+  return res?.genres || [];
+}
+
+// -----------------------------------------------------------------------------
+// Endpoint Discover Berdasarkan Genre & Filter
+// -----------------------------------------------------------------------------
+
+export async function discoverMovies(options: {
+  genreId?: number;
+  page?: number;
+  sortBy?: string;
+}): Promise<{
+  results: TmdbMovie[];
+  totalPages: number;
+  totalResults: number;
+}> {
+  const params: Record<string, string> = {
+    page: String(options.page || 1),
+    sort_by: options.sortBy || "popularity.desc",
+    include_adult: "false",
+  };
+
+  if (options.genreId && options.genreId > 0) {
+    params.with_genres = String(options.genreId);
+  }
+
+  const res = await tmdbFetch<TmdbPaginatedResponse<TmdbMovie>>(
+    TMDB_ENDPOINTS.discoverMovie,
+    params,
+    1800 // Cache 30 menit
+  );
+
+  return {
+    results: (res?.results || []).map((m) => ({ ...m, media_type: "movie" })),
+    totalPages: res?.total_pages || 0,
+    totalResults: res?.total_results || 0,
+  };
+}
+
+export async function discoverTvShows(options: {
+  genreId?: number;
+  page?: number;
+  sortBy?: string;
+}): Promise<{
+  results: TmdbTvShow[];
+  totalPages: number;
+  totalResults: number;
+}> {
+  const params: Record<string, string> = {
+    page: String(options.page || 1),
+    sort_by: options.sortBy || "popularity.desc",
+    include_adult: "false",
+  };
+
+  if (options.genreId && options.genreId > 0) {
+    params.with_genres = String(options.genreId);
+  }
+
+  const res = await tmdbFetch<TmdbPaginatedResponse<TmdbTvShow>>(
+    TMDB_ENDPOINTS.discoverTv,
+    params,
+    1800 // Cache 30 menit
+  );
+
+  return {
+    results: (res?.results || []).map((s) => ({ ...s, media_type: "tv" })),
+    totalPages: res?.total_pages || 0,
+    totalResults: res?.total_results || 0,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Endpoint Pencarian Terisolasi Film & Serial
+// -----------------------------------------------------------------------------
+
+export async function searchMovies(
+  query: string,
+  page = 1
+): Promise<{
+  results: TmdbMovie[];
+  totalPages: number;
+  totalResults: number;
+}> {
+  if (!query || query.trim() === "") {
+    return { results: [], totalPages: 0, totalResults: 0 };
+  }
+
+  const res = await tmdbFetch<TmdbPaginatedResponse<TmdbMovie>>(
+    TMDB_ENDPOINTS.searchMovie,
+    { query: query.trim(), page: String(page), include_adult: "false" },
+    300 // Cache 5 menit untuk pencarian
+  );
+
+  return {
+    results: (res?.results || []).map((m) => ({ ...m, media_type: "movie" })),
+    totalPages: res?.total_pages || 0,
+    totalResults: res?.total_results || 0,
+  };
+}
+
+export async function searchTvShows(
+  query: string,
+  page = 1
+): Promise<{
+  results: TmdbTvShow[];
+  totalPages: number;
+  totalResults: number;
+}> {
+  if (!query || query.trim() === "") {
+    return { results: [], totalPages: 0, totalResults: 0 };
+  }
+
+  const res = await tmdbFetch<TmdbPaginatedResponse<TmdbTvShow>>(
+    TMDB_ENDPOINTS.searchTv,
+    { query: query.trim(), page: String(page), include_adult: "false" },
+    300 // Cache 5 menit untuk pencarian
+  );
+
+  return {
+    results: (res?.results || []).map((s) => ({ ...s, media_type: "tv" })),
+    totalPages: res?.total_pages || 0,
+    totalResults: res?.total_results || 0,
+  };
+}
+
+// -----------------------------------------------------------------------------
+// Service Orkestrasi Katalog Terpadu (Genre + Search + Type)
+// -----------------------------------------------------------------------------
+
+export interface CatalogQueryOptions {
+  type: "all" | "movie" | "tv";
+  genreId?: number | null;
+  query?: string | null;
+  sortBy?: string | null;
+  page?: number;
+}
+
+export interface CatalogQueryResult {
+  movies: TmdbMovie[];
+  tvShows: TmdbTvShow[];
+  totalResults: number;
+  totalPages: number;
+  page: number;
+}
+
+export async function getCatalogItems(
+  options: CatalogQueryOptions
+): Promise<CatalogQueryResult> {
+  const page = Math.max(1, options.page || 1);
+  const rawQuery = options.query?.trim() || "";
+  const genreId = options.genreId && options.genreId > 0 ? options.genreId : null;
+  const type = options.type || "all";
+  const sortBy = options.sortBy || "popularity.desc";
+
+  // Kasus 1: Pengguna memasukkan kata kunci pencarian
+  if (rawQuery.length > 0) {
+    if (type === "movie") {
+      const searchRes = await searchMovies(rawQuery, page);
+      const filtered = genreId
+        ? searchRes.results.filter((m) => m.genre_ids?.includes(genreId))
+        : searchRes.results;
+      return {
+        movies: filtered,
+        tvShows: [],
+        totalResults: genreId ? filtered.length : searchRes.totalResults,
+        totalPages: searchRes.totalPages,
+        page,
+      };
+    }
+
+    if (type === "tv") {
+      const searchRes = await searchTvShows(rawQuery, page);
+      const filtered = genreId
+        ? searchRes.results.filter((s) => s.genre_ids?.includes(genreId))
+        : searchRes.results;
+      return {
+        movies: [],
+        tvShows: filtered,
+        totalResults: genreId ? filtered.length : searchRes.totalResults,
+        totalPages: searchRes.totalPages,
+        page,
+      };
+    }
+
+    // Mode "all"
+    const searchRes = await searchMultiCatalog(rawQuery, page);
+    const movies = genreId
+      ? searchRes.movies.filter((m) => m.genre_ids?.includes(genreId))
+      : searchRes.movies;
+    const tvShows = genreId
+      ? searchRes.tvShows.filter((s) => s.genre_ids?.includes(genreId))
+      : searchRes.tvShows;
+
+    return {
+      movies,
+      tvShows,
+      totalResults: genreId ? movies.length + tvShows.length : searchRes.totalResults,
+      totalPages: searchRes.totalPages,
+      page,
+    };
+  }
+
+  // Kasus 2: Penjelajahan Katalog berdasarkan Filter Genre / Popularitas (Query kosong)
+  if (type === "movie") {
+    const discoverRes = await discoverMovies({ genreId: genreId ?? undefined, page, sortBy });
+    return {
+      movies: discoverRes.results,
+      tvShows: [],
+      totalResults: discoverRes.totalResults,
+      totalPages: discoverRes.totalPages,
+      page,
+    };
+  }
+
+  if (type === "tv") {
+    const discoverRes = await discoverTvShows({ genreId: genreId ?? undefined, page, sortBy });
+    return {
+      movies: [],
+      tvShows: discoverRes.results,
+      totalResults: discoverRes.totalResults,
+      totalPages: discoverRes.totalPages,
+      page,
+    };
+  }
+
+  // Mode "all" tanpa kata kunci
+  const [movieRes, tvRes] = await Promise.all([
+    discoverMovies({ genreId: genreId ?? undefined, page, sortBy }),
+    discoverTvShows({ genreId: genreId ?? undefined, page, sortBy }),
+  ]);
+
+  return {
+    movies: movieRes.results,
+    tvShows: tvRes.results,
+    totalResults: movieRes.totalResults + tvRes.totalResults,
+    totalPages: Math.max(movieRes.totalPages, tvRes.totalPages),
+    page,
+  };
+}
+

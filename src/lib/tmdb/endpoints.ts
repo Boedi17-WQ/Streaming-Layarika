@@ -24,4 +24,12 @@ export const TMDB_ENDPOINTS = {
   searchMulti: "/search/multi",
   searchMovie: "/search/movie",
   searchTv: "/search/tv",
+
+  // Genre Endpoints
+  genreMovieList: "/genre/movie/list",
+  genreTvList: "/genre/tv/list",
+
+  // Discover Endpoints
+  discoverMovie: "/discover/movie",
+  discoverTv: "/discover/tv",
 } as const;
