@@ -17,7 +17,9 @@
     "test:lifecycle": "tsx src/lib/streaming/player-lifecycle.test.ts",
     "test:providers": "tsx src/lib/streaming/providers.test.ts",
     "test:catalog": "tsx src/lib/tmdb/catalog.test.ts",
-    "test:integration": "tsx src/__tests__/tahap5-integration.test.ts"
+    "test:integration": "tsx src/__tests__/tahap5-integration.test.ts",
+    "test:admin": "tsx src/lib/admin/admin.test.ts",
+    "admin:set": "tsx scripts/set-admin.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

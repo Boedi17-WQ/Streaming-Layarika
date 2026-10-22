@@ -15,6 +15,11 @@ LayarRika adalah aplikasi full-stack modern yang dikembangkan untuk menyajikan p
 - **Tahap 2 (Selesai)**: Integrasi penuh TMDB API resmi v3 di sisi server (*server-only client*), 6 kategori katalog beranda, halaman detail film (`/movie/[id]`), halaman detail serial TV (`/tv/[id]`), fitur pencarian multi-katalog (`/search`), optimasi gambar remote TMDB, dan atribusi wajib The Movie Database.
 - **Tahap 3 (Selesai)**: Desain arsitektur database Neon PostgreSQL & Prisma ORM v6, skema relasional lengkap (User, Auth.js Account & Session, Watchlist, WatchHistory, PlaybackAsset, SubscriptionPlan), validasi progres tontonan berbasis Zod, singleton PrismaClient aman, dan script migrasi SQL awal.
 - **Tahap 4 (Selesai)**: Autentikasi Pengguna menggunakan Auth.js (NextAuth v5), GitHub OAuth 2.0 provider, Prisma Adapter dengan penyimpanan akun/pengguna terverifikasi, halaman `/login` sinematik beraksen emas, proteksi server-side sesi pada `/profile`, dan integrasi dinamis `SiteHeader` (Masuk / Profil / Keluar).
+- **Tahap 5 (Selesai)**: Manajemen Playlist & Watchlist personal, pencatatan riwayat tontonan real-time (`watch_history`), integrasi Neon DB.
+- **Tahap 6 (Selesai)**: Multi-provider video player (HLS, MP4 legal, VidLink, 2Embed), navigasi episode & season interaktif.
+- **Tahap 7 (Selesai)**: Sistem hak akses berjenjang (Free vs VIP), integrasi Midtrans Sandbox Virtual Account (BCA, BNI, BRI), validasi kuota harian Asia/Jakarta, dan modal simulasi transaksi.
+- **Tahap 8 (Selesai)**: Portal Admin Sinematik (`/admin`), manajemen aset video legal CRUD (HLS / MP4), player preview test interaktif, manajemen pengguna & promosi wewenang (USER/ADMIN), serta aktivasi manual VIP.
+- **Tahap 9 (Selesai)**: Testing menyeluruh 19 skenario akses kuota tontonan, validasi Zod, pencegahan race-condition, dan proteksi role guard.
 
 ---
 
@@ -209,11 +214,11 @@ npm run build
 - [x] **Tahap 2**: Integrasi TMDB API di sisi Server (Trending, Popular, Detail, Search).
 - [x] **Tahap 3**: Desain Database Neon PostgreSQL & Konfigurasi Prisma ORM.
 - [x] **Tahap 4**: Autentikasi Pengguna dengan Auth.js v5 & GitHub OAuth.
-- [ ] **Tahap 5**: Manajemen Playlist & Riwayat Tontonan Pengguna.
-- [ ] **Tahap 6**: Implementasi Pemutar Video Web HTML5 / HLS & Season Navigation.
-- [ ] **Tahap 7**: Sistem Hak Akses Free & Premium (Simulasi Transaksi Aman).
-- [ ] **Tahap 8**: Panel Admin Pengelolaan Aset Video & Episode.
-- [ ] **Tahap 9**: Testing Menyeluruh (Unit, Integration, E2E) & Security Hardening.
+- [x] **Tahap 5**: Manajemen Playlist & Riwayat Tontonan Pengguna.
+- [x] **Tahap 6**: Implementasi Pemutar Video Web HTML5 / HLS & Season Navigation.
+- [x] **Tahap 7**: Sistem Hak Akses Free & Premium VIP (Integrasi Midtrans Sandbox & Kuota Tontonan).
+- [x] **Tahap 8**: Panel Admin Pengelolaan Aset Video & Episode (`/admin`).
+- [x] **Tahap 9**: Testing Menyeluruh (Unit, Integration, E2E) & Security Hardening.
 - [ ] **Tahap 10**: Deployment Publik ke Vercel & Neon Production Database.
 
 ---

@@ -14,6 +14,7 @@ import {
   List,
   X,
   Crown,
+  ShieldCheck,
 } from "@phosphor-icons/react";
 import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
 import { checkNavActive, NavItemMatch } from "@/lib/navigation/active-nav";
@@ -23,6 +24,7 @@ export interface SiteHeaderUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
+  role?: string;
   isVip?: boolean;
 }
 
@@ -263,6 +265,17 @@ export function SiteHeader({ user }: SiteHeaderProps) {
           {/* Desktop Auth State */}
           {user ? (
             <div className="hidden sm:flex items-center gap-2">
+              {user.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  title="Masuk ke Panel Kontrol Administrator"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 transition"
+                >
+                  <ShieldCheck size={14} weight="fill" />
+                  <span>Admin</span>
+                </Link>
+              )}
+
               <Link
                 href="/profile"
                 aria-current={profileMatch.isExactActive ? "page" : undefined}
@@ -439,6 +452,17 @@ export function SiteHeader({ user }: SiteHeaderProps) {
           <div className="pt-2 border-t border-[#292929]">
             {user ? (
               <div className="space-y-2">
+                {user.role === "ADMIN" && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/15 p-2.5 text-xs font-bold text-amber-400 hover:bg-amber-500/25 transition"
+                  >
+                    <ShieldCheck size={16} weight="fill" />
+                    <span>Panel Administrator</span>
+                  </Link>
+                )}
+
                 <Link
                   href="/profile"
                   onClick={() => setMobileMenuOpen(false)}
