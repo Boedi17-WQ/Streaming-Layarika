@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { auth } from "@/auth";
 import { getUserPlaylists } from "@/services/playlist.service";
 import { PlaylistList, PlaylistSummary } from "@/components/playlist/PlaylistList";
@@ -10,41 +12,49 @@ export const metadata: Metadata = {
   description: "Kelola daftar putar film dan serial TV kustom pribadi Anda di LayarRika.",
 };
 
-export default async function PlaylistsPage() {
+// Mengizinkan evaluasi rute dinamis sesuai konvensi Next.js 16
+export const instant = false;
+
+function PlaylistsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex justify-between items-center pb-6 border-b border-neutral-800">
+        <div className="h-6 w-36 bg-neutral-800 rounded-lg" />
+        <div className="h-10 w-36 bg-neutral-800 rounded-xl" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-48 rounded-2xl bg-neutral-900/60 border border-neutral-800" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+async function PlaylistsDataLoader() {
+  await connection();
   const session = await auth();
 
   if (!session?.user?.id) {
     return (
-      <main className="min-h-screen pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-amber-500 font-bold mb-2">
-            <PlaylistIcon size={16} weight="fill" />
-            <span>Koleksi Sinematik Pribadi</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Playlist Saya
-          </h1>
+      <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-12 text-center max-w-xl mx-auto">
+        <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-4">
+          <ShieldCheck size={36} weight="duotone" />
         </div>
-
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-12 text-center max-w-xl mx-auto">
-          <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck size={36} weight="duotone" />
-          </div>
-          <h2 className="text-xl font-bold text-white mb-2">
-            Masuk untuk Mengelola Playlist
-          </h2>
-          <p className="text-neutral-400 text-sm mb-6 leading-relaxed">
-            Daftar playlist kustom Anda disimpan secara aman di cloud dan dapat diakses dari perangkat mana pun setelah masuk ke akun LayarRika Anda.
-          </p>
-          <Link
-            href="/login?callbackUrl=/playlists"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-semibold shadow-lg shadow-amber-500/20 transition cursor-pointer"
-          >
-            <SignIn size={20} weight="bold" />
-            <span>Masuk Sekarang</span>
-          </Link>
-        </div>
-      </main>
+        <h2 className="text-xl font-bold text-white mb-2">
+          Masuk untuk Mengelola Playlist
+        </h2>
+        <p className="text-neutral-400 text-sm mb-6 leading-relaxed">
+          Daftar playlist kustom Anda disimpan secara aman di cloud dan dapat diakses dari perangkat mana pun setelah masuk ke akun LayarRika Anda.
+        </p>
+        <Link
+          href="/login?callbackUrl=/playlists"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-semibold shadow-lg shadow-amber-500/20 transition cursor-pointer"
+        >
+          <SignIn size={20} weight="bold" />
+          <span>Masuk Sekarang</span>
+        </Link>
+      </div>
     );
   }
 
@@ -66,6 +76,10 @@ export default async function PlaylistsPage() {
     })),
   }));
 
+  return <PlaylistList initialPlaylists={playlists} />;
+}
+
+export default function PlaylistsPage() {
   return (
     <main className="min-h-screen pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div className="mb-8">
@@ -81,7 +95,9 @@ export default async function PlaylistsPage() {
         </p>
       </div>
 
-      <PlaylistList initialPlaylists={playlists} />
+      <Suspense fallback={<PlaylistsSkeleton />}>
+        <PlaylistsDataLoader />
+      </Suspense>
     </main>
   );
 }

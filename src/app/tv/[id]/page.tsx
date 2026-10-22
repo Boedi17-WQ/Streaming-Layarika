@@ -21,8 +21,10 @@ import {
 } from "@/lib/tmdb/images";
 import { mapTmdbTvToMovie } from "@/lib/tmdb/mappers";
 import { MOCK_SERIES } from "@/data/mockMovies";
+import { TmdbTvSeasonSummary, TmdbTvEpisode } from "@/lib/tmdb/types";
 import { auth } from "@/auth";
 import { isItemInWatchlist } from "@/services/watchlist.service";
+import { getUserSubscriptionStatus } from "@/services/subscription.service";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { TvSeasonEpisodeBrowser } from "@/components/tv/TvSeasonEpisodeBrowser";
@@ -474,15 +476,23 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
             {/* Browser Musim & Episode Interaktif */}
             {tv.seasons && tv.seasons.length > 0 && (
               <div className="pt-2 border-t border-[#292929]">
-                <TvSeasonEpisodeBrowser
-                  seriesId={tv.id}
-                  seriesName={tv.name}
-                  posterPath={tv.poster_path}
-                  seasons={tv.seasons}
-                  initialSeasonNumber={1}
-                  initialEpisodes={initialEpisodes}
-                  youtubeKey={youtubeKey}
-                />
+                <Suspense
+                  fallback={
+                    <div className="h-64 rounded-2xl border border-[#292929] bg-[#121212] flex items-center justify-center animate-pulse">
+                      <span className="text-xs text-[#737373]">Memuat pemutar episode serial...</span>
+                    </div>
+                  }
+                >
+                  <TvEpisodeBrowserSlot
+                    seriesId={tv.id}
+                    seriesName={tv.name}
+                    posterPath={tv.poster_path}
+                    seasons={tv.seasons}
+                    initialSeasonNumber={1}
+                    initialEpisodes={initialEpisodes}
+                    youtubeKey={youtubeKey}
+                  />
+                </Suspense>
               </div>
             )}
 
@@ -549,6 +559,46 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
         </div>
       </Container>
     </div>
+  );
+}
+
+async function TvEpisodeBrowserSlot({
+  seriesId,
+  seriesName,
+  posterPath,
+  seasons,
+  initialSeasonNumber,
+  initialEpisodes,
+  youtubeKey,
+}: {
+  seriesId: number;
+  seriesName: string;
+  posterPath: string | null;
+  seasons: TmdbTvSeasonSummary[];
+  initialSeasonNumber: number;
+  initialEpisodes: TmdbTvEpisode[];
+  youtubeKey: string | null;
+}) {
+  await connection();
+  const session = await auth();
+  const userId =
+    session?.user?.id ||
+    (session?.user as { sub?: string } | undefined)?.sub ||
+    null;
+  const subStatus = userId ? await getUserSubscriptionStatus(userId) : null;
+
+  return (
+    <TvSeasonEpisodeBrowser
+      seriesId={seriesId}
+      seriesName={seriesName}
+      posterPath={posterPath}
+      seasons={seasons}
+      initialSeasonNumber={initialSeasonNumber}
+      initialEpisodes={initialEpisodes}
+      youtubeKey={youtubeKey}
+      isAuthenticated={Boolean(userId)}
+      isVipInitial={subStatus?.isVip || false}
+    />
   );
 }
 

@@ -36,30 +36,20 @@ export function RegisterForm({ callbackUrl = "/" }: RegisterFormProps) {
       const target = `/login?registered=true${
         callbackUrl !== "/" ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ""
       }`;
-      const timer = setTimeout(() => {
-        router.push(target);
-      }, 1200);
-      return () => clearTimeout(timer);
+      router.replace(target);
     }
   }, [state?.success, callbackUrl, router]);
 
   if (state?.success) {
     return (
-      <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-6 text-center text-emerald-200">
+      <div className="space-y-4 rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-6 text-center text-emerald-200 animate-in fade-in duration-150">
         <CheckCircle size={36} className="mx-auto text-emerald-400" weight="fill" />
         <h2 className="text-lg font-bold text-[#F5F5F5]">Pendaftaran Berhasil!</h2>
         <p className="text-xs text-emerald-300">
-          Akun LayarRika Anda telah berhasil dibuat. Mengalihkan Anda ke halaman login...
+          Akun Anda telah berhasil dibuat. Mengalihkan Anda ke halaman masuk...
         </p>
-        <div className="pt-2">
-          <Link
-            href={`/login?registered=true${
-              callbackUrl !== "/" ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ""
-            }`}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#D9A52E] px-4 py-2 text-xs font-bold text-[#0A0A0A] hover:bg-[#c49226]"
-          >
-            <span>Masuk Sekarang</span>
-          </Link>
+        <div className="flex justify-center pt-2">
+          <SpinnerGap size={24} className="animate-spin text-[#D9A52E]" />
         </div>
       </div>
     );

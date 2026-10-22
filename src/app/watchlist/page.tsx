@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Container } from "@/components/ui/Container";
 import { auth } from "@/auth";
 import { getUserWatchlist } from "@/services/watchlist.service";
@@ -12,7 +13,10 @@ export const metadata: Metadata = {
   description: "Daftar film dan serial TV tersimpan milik Anda di LayarRika. Tersimpan permanen dan tersinkronisasi di seluruh perangkat.",
 };
 
+export const instant = false;
+
 async function WatchlistDataLoader() {
+  await connection();
   const session = await auth();
 
   if (!session?.user?.id) {

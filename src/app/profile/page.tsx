@@ -7,6 +7,7 @@ import { auth, signOut } from "@/auth";
 import { Container } from "@/components/ui/Container";
 import { getUserWatchlist } from "@/services/watchlist.service";
 import { getUserWatchHistory } from "@/services/history.service";
+import { getUserEntitlement } from "@/services/subscription.service";
 import {
   ProfileCollections,
   WatchlistCardItem,
@@ -16,6 +17,11 @@ import {
   SignOut,
   ShieldCheck,
   ArrowLeft,
+  Crown,
+  Sparkle,
+  Television,
+  FilmReel,
+  ArrowRight,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata: Metadata = {
@@ -41,10 +47,11 @@ export default async function ProfilePage() {
   const { user } = session;
   const initial = user.name ? user.name.charAt(0).toUpperCase() : "U";
 
-  // Ambil koleksi personal watchlist dan riwayat tontonan pengguna dari database Neon
-  const [rawWatchlist, rawHistory] = await Promise.all([
+  // Ambil koleksi personal watchlist, riwayat tontonan, dan entitlement langganan pengguna dari database Neon
+  const [rawWatchlist, rawHistory, entitlement] = await Promise.all([
     getUserWatchlist(user.id),
     getUserWatchHistory(user.id),
+    getUserEntitlement(user.id),
   ]);
 
   // Serialisasi data tanggal untuk Client Component
@@ -148,6 +155,93 @@ export default async function ProfilePage() {
                 <span>Keluar</span>
               </button>
             </form>
+          </div>
+        </div>
+
+        {/* Status Langganan & Kuota Tiered Content */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5 sm:p-7 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                  entitlement.isVip
+                    ? "bg-[#D9A52E]/15 border border-[#D9A52E]/40 text-[#D9A52E]"
+                    : "bg-neutral-800/80 border border-neutral-700 text-neutral-400"
+                }`}
+              >
+                {entitlement.isVip ? (
+                  <Crown size={24} weight="fill" />
+                ) : (
+                  <Sparkle size={24} weight="duotone" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-white">
+                    {entitlement.planName}
+                  </h3>
+                  {entitlement.isVip ? (
+                    <span className="px-2.5 py-0.5 rounded-full bg-[#D9A52E]/20 border border-[#D9A52E]/40 text-[#D9A52E] text-[10px] font-black uppercase tracking-wider">
+                      VIP Member
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-bold uppercase tracking-wider">
+                      Free Tier
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  {entitlement.isVip && entitlement.endDate
+                    ? `Langganan aktif hingga ${new Date(
+                        entitlement.endDate
+                      ).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}`
+                    : "Batas tontonan Free berlaku setiap hari"}
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/pricing"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D9A52E] to-[#b3821c] hover:from-[#e5b33d] hover:to-[#c49226] text-neutral-950 text-xs font-bold uppercase tracking-wider transition shadow-md shadow-[#D9A52E]/10"
+            >
+              <span>{entitlement.isVip ? "Kelola / Perpanjang VIP" : "Upgrade ke Premium VIP"}</span>
+              <ArrowRight size={14} weight="bold" />
+            </Link>
+          </div>
+
+          {/* Kuota Ringkasan */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div className="p-4 rounded-xl border border-neutral-800 bg-neutral-950/60 flex items-start gap-3">
+              <Television size={20} className="text-[#D9A52E] shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-neutral-300 block">
+                  Kuota Episode Serial
+                </span>
+                <p className="text-xs text-neutral-400">
+                  {entitlement.isVip
+                    ? "Akses seluruh episode serial tanpa batas kuota."
+                    : `${entitlement.episodeQuota.used} dari 5 episode terpakai hari ini (${entitlement.episodeQuota.remaining} tersisa). Reset tiap tengah malam WIB.`}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-neutral-800 bg-neutral-950/60 flex items-start gap-3">
+              <FilmReel size={20} className="text-[#D9A52E] shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-neutral-300 block">
+                  Batas Durasi Film
+                </span>
+                <p className="text-xs text-neutral-400">
+                  {entitlement.isVip
+                    ? "Nonton film berdurasi penuh tanpa jeda batas waktu."
+                    : "Maksimal 60 menit (3.600 detik) pemutaran aktual untuk setiap film."}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -54,10 +54,12 @@ model User {
   sessions      Session[]
 
   // Relasi Fitur Aplikasi LayarRika
-  watchlists    Watchlist[]
-  watchHistory  WatchHistory[]
-  subscriptions UserSubscription[]
-  playlists     Playlist[]
+  watchlists          Watchlist[]
+  watchHistory        WatchHistory[]
+  subscriptions       UserSubscription[]
+  playlists           Playlist[]
+  episodeQuotaUsages  EpisodeQuotaUsage[]
+  movieConsumptions   MovieWatchConsumption[]
 
   @@map("users")
 }
@@ -190,15 +192,19 @@ model PlaybackAsset {
 // -----------------------------------------------------------------------------
 
 model SubscriptionPlan {
-  id           String             @id @default(cuid())
-  name         String
-  slug         String             @unique
-  price        Int                @default(0) // IDR
-  durationDays Int                @default(30)
-  features     String[]
-  isActive     Boolean            @default(true)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  id                     String             @id @default(cuid())
+  name                   String
+  slug                   String             @unique
+  description            String?            @db.Text
+  price                  Int                @default(0) // IDR
+  durationDays           Int                @default(30)
+  features               String[]
+  episodeLimit           Int?               // null = unlimited untuk Premium VIP, 5 untuk Free
+  movieWatchSecondsLimit Int?               // null = unlimited untuk Premium VIP, 3600 untuk Free
+  quotaPeriodDays        Int                @default(1) // Periode kuota episode (1 = harian)
+  isActive               Boolean            @default(true)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
 
   subscriptions UserSubscription[]
 
@@ -220,6 +226,43 @@ model UserSubscription {
 
   @@index([userId, status])
   @@map("user_subscriptions")
+}
+
+// -----------------------------------------------------------------------------
+// Kuota Tontonan Tiered Content (Free vs Premium VIP)
+// -----------------------------------------------------------------------------
+
+model EpisodeQuotaUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  tmdbId        Int
+  seasonNumber  Int
+  episodeNumber Int
+  periodKey     String   // Format YYYY-MM-DD zona Asia/Jakarta
+  accessedAt    DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Mencegah episode yang sama dihitung lebih dari satu kali dalam periode yang sama
+  @@unique([userId, periodKey, tmdbId, seasonNumber, episodeNumber])
+  @@index([userId, periodKey])
+  @@map("episode_quota_usages")
+}
+
+model MovieWatchConsumption {
+  id              String   @id @default(cuid())
+  userId          String
+  tmdbId          Int
+  consumedSeconds Int      @default(0) // Total detik pemutaran aktual yang telah dikonsumsi
+  lastHeartbeatAt DateTime @default(now()) @updatedAt
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Rekor tunggal per pengguna per film
+  @@unique([userId, tmdbId])
+  @@index([userId])
+  @@map("movie_watch_consumptions")
 }
 
 // -----------------------------------------------------------------------------

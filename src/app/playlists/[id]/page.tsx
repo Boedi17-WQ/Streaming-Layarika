@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { auth } from "@/auth";
 import { getPlaylistById } from "@/services/playlist.service";
 import {
@@ -9,6 +10,8 @@ import {
 } from "@/components/playlist/PlaylistDetailView";
 import { ArrowLeft, LockKey, SignIn, WarningCircle } from "@phosphor-icons/react/dist/ssr";
 
+export const instant = false;
+
 interface PlaylistDetailPageProps {
   params: Promise<{ id: string }>;
 }
@@ -17,6 +20,7 @@ export async function generateMetadata({
   params,
 }: PlaylistDetailPageProps): Promise<Metadata> {
   const { id } = await params;
+  await connection();
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -40,6 +44,7 @@ export async function generateMetadata({
 
 export default async function PlaylistDetailPage({ params }: PlaylistDetailPageProps) {
   const { id } = await params;
+  await connection();
   const session = await auth();
 
   // 1. Pengguna belum login

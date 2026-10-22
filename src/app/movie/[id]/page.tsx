@@ -22,6 +22,7 @@ import { mapTmdbMovieToMovie } from "@/lib/tmdb/mappers";
 import { MOCK_FEATURED_MOVIES } from "@/data/mockMovies";
 import { auth } from "@/auth";
 import { isItemInWatchlist } from "@/services/watchlist.service";
+import { getUserSubscriptionStatus } from "@/services/subscription.service";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { EmbeddedPlayer } from "@/components/player/EmbeddedPlayer";
@@ -365,14 +366,21 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                 </span>
               </div>
 
-              <EmbeddedPlayer
-                tmdbId={movie.id}
-                mediaType="MOVIE"
-                title={movie.title}
-                posterPath={movie.poster_path}
-                backdropPath={movie.backdrop_path}
-                youtubeKey={youtubeKey}
-              />
+              <Suspense
+                fallback={
+                  <div className="relative aspect-video w-full rounded-2xl border border-[#292929] bg-[#000000] flex items-center justify-center animate-pulse">
+                    <span className="text-xs text-[#737373]">Memuat pemutar video...</span>
+                  </div>
+                }
+              >
+                <MoviePlayerSlot
+                  tmdbId={movie.id}
+                  title={movie.title}
+                  posterPath={movie.poster_path}
+                  backdropPath={movie.backdrop_path}
+                  youtubeKey={youtubeKey}
+                />
+              </Suspense>
             </div>
 
             {/* Informasi & Detail Produksi Lengkap (TMDB) */}
@@ -524,6 +532,41 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
         </div>
       </Container>
     </div>
+  );
+}
+
+async function MoviePlayerSlot({
+  tmdbId,
+  title,
+  posterPath,
+  backdropPath,
+  youtubeKey,
+}: {
+  tmdbId: number;
+  title: string;
+  posterPath: string | null;
+  backdropPath: string | null;
+  youtubeKey: string | null;
+}) {
+  await connection();
+  const session = await auth();
+  const userId =
+    session?.user?.id ||
+    (session?.user as { sub?: string } | undefined)?.sub ||
+    null;
+  const subStatus = userId ? await getUserSubscriptionStatus(userId) : null;
+
+  return (
+    <EmbeddedPlayer
+      tmdbId={tmdbId}
+      mediaType="MOVIE"
+      title={title}
+      posterPath={posterPath}
+      backdropPath={backdropPath}
+      youtubeKey={youtubeKey}
+      isAuthenticated={Boolean(userId)}
+      isVipInitial={subStatus?.isVip || false}
+    />
   );
 }
 

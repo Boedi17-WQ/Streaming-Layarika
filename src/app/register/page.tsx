@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/auth";
 import { Container } from "@/components/ui/Container";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import {
@@ -30,8 +32,13 @@ interface RegisterPageProps {
 // -----------------------------------------------------------------------------
 async function RegisterContent({ searchParams }: RegisterPageProps) {
   await connection();
+  const session = await auth();
+  if (session?.user) {
+    redirect("/");
+  }
+
   const { callbackUrl } = await searchParams;
-  const safeCallbackUrl = callbackUrl && !callbackUrl.startsWith("http") ? callbackUrl : "/";
+  const safeCallbackUrl = callbackUrl && !callbackUrl.startsWith("http") && callbackUrl.startsWith("/") ? callbackUrl : "/";
 
   return (
     <div className="space-y-6 rounded-2xl border border-[#292929] bg-[#171717] p-6 sm:p-8 shadow-2xl backdrop-blur-md">

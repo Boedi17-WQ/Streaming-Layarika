@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Play,
@@ -15,6 +15,9 @@ import { TmdbTvSeasonSummary, TmdbTvEpisode } from "@/lib/tmdb/types";
 import { getTmdbStillUrl } from "@/lib/tmdb/images";
 import { EmbeddedPlayer } from "@/components/player/EmbeddedPlayer";
 import { getSeasonEpisodesAction } from "@/app/actions/tv";
+import { checkTvEpisodeAccessAction } from "@/app/actions/subscription";
+import { LoginRequiredModal } from "@/components/auth/LoginRequiredModal";
+import { PremiumRequiredModal } from "@/components/subscription/PremiumRequiredModal";
 
 export interface TvSeasonEpisodeBrowserProps {
   seriesId: number;
@@ -24,6 +27,8 @@ export interface TvSeasonEpisodeBrowserProps {
   initialSeasonNumber: number;
   initialEpisodes: TmdbTvEpisode[];
   youtubeKey?: string | null;
+  isAuthenticated?: boolean;
+  isVipInitial?: boolean;
 }
 
 export function TvSeasonEpisodeBrowser({
@@ -34,6 +39,8 @@ export function TvSeasonEpisodeBrowser({
   initialSeasonNumber,
   initialEpisodes,
   youtubeKey = null,
+  isAuthenticated = false,
+  isVipInitial = false,
 }: TvSeasonEpisodeBrowserProps) {
   // Hanya tampilkan musim reguler (> 0) terlebih dahulu, atau semua musim jika tidak ada musim reguler
   const validSeasons = seasons.filter((s) => s.season_number > 0);
@@ -49,6 +56,89 @@ export function TvSeasonEpisodeBrowser({
     initialEpisodes.length > 0 ? initialEpisodes[0] : null
   );
 
+  // State Modal Autentikasi Wajib Login (Addendum Tahap 9)
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [selectedEpisodeForLogin, setSelectedEpisodeForLogin] = useState<TmdbTvEpisode | null>(null);
+
+  // State Modal Kuota Premium (Addendum Tahap 9)
+  const [premiumModalState, setPremiumModalState] = useState<{
+    isOpen: boolean;
+    usedEpisodes: number;
+    episodeLimit: number;
+    remainingEpisodes: number;
+    message?: string;
+  }>({
+    isOpen: false,
+    usedEpisodes: 5,
+    episodeLimit: 5,
+    remainingEpisodes: 0,
+  });
+  const [checkingEpisodeId, setCheckingEpisodeId] = useState<number | null>(null);
+
+
+  // Sinkronkan status hak akses ketika jendela/tab kembali aktif (fokus)
+  useEffect(() => {
+    const handleFocus = async () => {
+      if (activeEpisode) {
+        try {
+          const res = await checkTvEpisodeAccessAction({
+            tmdbId: seriesId,
+            seasonNumber: activeEpisode.season_number,
+            episodeNumber: activeEpisode.episode_number,
+          });
+          if (res.allowed || res.reason !== "UNAUTHENTICATED") {
+            setIsLoginModalOpen(false);
+          }
+        } catch {}
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [seriesId, activeEpisode]);
+
+  // Memverifikasi izin tontonan episode ke server sebelum diputar
+  const handleSelectEpisode = async (ep: TmdbTvEpisode) => {
+    setCheckingEpisodeId(ep.id);
+    try {
+      const decision = await checkTvEpisodeAccessAction({
+        tmdbId: seriesId,
+        seasonNumber: ep.season_number,
+        episodeNumber: ep.episode_number,
+      });
+
+      if (decision.allowed) {
+        setActiveEpisode(ep);
+        document.getElementById("tv-player-section")?.scrollIntoView({ behavior: "smooth" });
+      } else {
+        if (decision.reason === "UNAUTHENTICATED") {
+          if (!isAuthenticated) {
+            setSelectedEpisodeForLogin(ep);
+            setIsLoginModalOpen(true);
+          }
+        } else {
+          setPremiumModalState({
+            isOpen: true,
+            usedEpisodes: decision.usedEpisodes,
+            episodeLimit: decision.episodeLimit || 5,
+            remainingEpisodes: decision.remainingEpisodes || 0,
+            message: decision.message,
+          });
+        }
+      }
+    } catch {
+      setPremiumModalState({
+        isOpen: true,
+        usedEpisodes: 5,
+        episodeLimit: 5,
+        remainingEpisodes: 0,
+        message: "Terjadi kesalahan saat memverifikasi kuota tontonan Anda. Silakan coba kembali.",
+      });
+    } finally {
+      setCheckingEpisodeId(null);
+    }
+  };
+
   const handleSelectSeason = async (seasonNum: number) => {
     if (seasonNum === activeSeasonNumber) return;
 
@@ -61,6 +151,7 @@ export function TvSeasonEpisodeBrowser({
       if (res.success && res.season?.episodes) {
         setEpisodes(res.season.episodes);
         if (res.season.episodes.length > 0) {
+          // Ganti pilihan episode preview tanpa mengonsumsi kuota
           setActiveEpisode(res.season.episodes[0]);
         }
       } else {
@@ -82,9 +173,7 @@ export function TvSeasonEpisodeBrowser({
   const handleNextEpisode = () => {
     if (hasNextEpisode) {
       const nextEp = episodes[currentEpIndex + 1];
-      setActiveEpisode(nextEp);
-      // Smooth scroll kembali ke player
-      document.getElementById("tv-player-section")?.scrollIntoView({ behavior: "smooth" });
+      handleSelectEpisode(nextEp);
     }
   };
 
@@ -120,6 +209,8 @@ export function TvSeasonEpisodeBrowser({
             youtubeKey={youtubeKey}
             hasNextEpisode={hasNextEpisode}
             onNextEpisode={handleNextEpisode}
+            isAuthenticated={isAuthenticated}
+            isVipInitial={isVipInitial}
           />
         </div>
       )}
@@ -192,10 +283,7 @@ export function TvSeasonEpisodeBrowser({
             return (
               <div
                 key={ep.id}
-                onClick={() => {
-                  setActiveEpisode(ep);
-                  document.getElementById("tv-player-section")?.scrollIntoView({ behavior: "smooth" });
-                }}
+                onClick={() => handleSelectEpisode(ep)}
                 className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-[#171717] p-4 cursor-pointer transition-all duration-200 ${
                   isPlayingThis
                     ? "border-[#D9A52E] bg-[#1c1a14] ring-1 ring-[#D9A52E]/50 shadow-lg shadow-[#D9A52E]/5"
@@ -219,11 +307,17 @@ export function TvSeasonEpisodeBrowser({
                       </div>
                     )}
 
-                    {/* Play Overlay */}
+                    {/* Play Overlay / Loading Spinner */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition duration-200">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-md">
-                        <Play size={14} weight="fill" className="ml-0.5" />
-                      </div>
+                      {checkingEpisodeId === ep.id ? (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0A0A0A] text-[#D9A52E] shadow-md border border-[#D9A52E]">
+                          <Spinner size={16} className="animate-spin text-[#D9A52E]" />
+                        </div>
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-md">
+                          <Play size={14} weight="fill" className="ml-0.5" />
+                        </div>
+                      )}
                     </div>
 
                     {/* Badge Nomor Episode */}
@@ -294,6 +388,29 @@ export function TvSeasonEpisodeBrowser({
           })}
         </div>
       )}
+
+      {/* Modal Autentikasi Wajib Login Sebelum Menonton (Addendum Tahap 9) */}
+      <LoginRequiredModal
+        isOpen={isLoginModalOpen && !isAuthenticated}
+        onClose={() => setIsLoginModalOpen(false)}
+        isAuthenticated={isAuthenticated}
+        callbackUrl={`/tv/${seriesId}?season=${selectedEpisodeForLogin?.season_number || activeEpisode?.season_number || 1}&episode=${selectedEpisodeForLogin?.episode_number || activeEpisode?.episode_number || 1}`}
+        mediaTitle={seriesName}
+        mediaType="TV"
+        seasonNumber={selectedEpisodeForLogin?.season_number || activeEpisode?.season_number || 1}
+        episodeNumber={selectedEpisodeForLogin?.episode_number || activeEpisode?.episode_number || 1}
+      />
+
+      {/* Modal Paywall Kuota Premium (Addendum Tahap 9) */}
+      <PremiumRequiredModal
+        isOpen={premiumModalState.isOpen}
+        onClose={() => setPremiumModalState((prev) => ({ ...prev, isOpen: false }))}
+        reason="EPISODE_LIMIT_REACHED"
+        usedEpisodes={premiumModalState.usedEpisodes}
+        episodeLimit={premiumModalState.episodeLimit}
+        remainingEpisodes={premiumModalState.remainingEpisodes}
+        customMessage={premiumModalState.message}
+      />
     </div>
   );
 }

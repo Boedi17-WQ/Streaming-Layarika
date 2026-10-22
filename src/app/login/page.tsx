@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/auth";
 import { Container } from "@/components/ui/Container";
 import { LoginForm } from "@/components/auth/LoginForm";
 import {
@@ -31,8 +33,14 @@ interface LoginPageProps {
 // -----------------------------------------------------------------------------
 async function LoginContent({ searchParams }: LoginPageProps) {
   await connection();
+  const session = await auth();
   const { callbackUrl, registered } = await searchParams;
-  const safeCallbackUrl = callbackUrl && !callbackUrl.startsWith("http") ? callbackUrl : "/";
+  const safeCallbackUrl = callbackUrl && !callbackUrl.startsWith("http") && callbackUrl.startsWith("/") ? callbackUrl : "/";
+
+  if (session?.user) {
+    redirect(safeCallbackUrl);
+  }
+
   const isRegistered = registered === "true";
 
   return (

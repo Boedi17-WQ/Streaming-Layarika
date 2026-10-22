@@ -19,8 +19,17 @@ import {
   LockKey,
   Play,
   Stop,
+  Crown,
+  Clock,
 } from "@phosphor-icons/react";
 import { recordWatchProgressAction } from "@/app/actions/history";
+import {
+  checkMovieWatchAccessAction,
+  recordMovieHeartbeatAction,
+  getPlaybackSourceAction,
+} from "@/app/actions/subscription";
+import { LoginRequiredModal } from "@/components/auth/LoginRequiredModal";
+import { PremiumRequiredModal } from "@/components/subscription/PremiumRequiredModal";
 
 export interface EmbeddedPlayerProps {
   tmdbId: number;
@@ -35,6 +44,8 @@ export interface EmbeddedPlayerProps {
   licensedUrl?: string | null;
   hasNextEpisode?: boolean;
   onNextEpisode?: () => void;
+  isAuthenticated?: boolean;
+  isVipInitial?: boolean;
 }
 
 export function EmbeddedPlayer({
@@ -50,6 +61,8 @@ export function EmbeddedPlayer({
   licensedUrl = null,
   hasNextEpisode = false,
   onNextEpisode,
+  isAuthenticated = false,
+  isVipInitial = false,
 }: EmbeddedPlayerProps) {
   const [activeProvider, setActiveProvider] = useState<StreamingProviderId>("trailer");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -57,10 +70,68 @@ export function EmbeddedPlayer({
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [isMarkingCompleted, setIsMarkingCompleted] = useState<boolean>(false);
+  const [serverStreamUrl, setServerStreamUrl] = useState<string | null>(null);
 
   // Referensi DOM untuk kontrol stop aman & pembebasan memori
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // State Modal Autentikasi Wajib Login (Addendum Tahap 9)
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+
+  // State Modal Kuota Premium (Addendum Tahap 9)
+  const [premiumModalState, setPremiumModalState] = useState<{
+    isOpen: boolean;
+    reason: "EPISODE_LIMIT_REACHED" | "MOVIE_LIMIT_REACHED";
+    usedEpisodes?: number;
+    episodeLimit?: number;
+    remainingEpisodes?: number;
+    message?: string;
+  }>({
+    isOpen: false,
+    reason: "EPISODE_LIMIT_REACHED",
+  });
+
+  const [movieEntitlement, setMovieEntitlement] = useState<{
+    allowed: boolean;
+    isVip: boolean;
+    consumedSeconds: number;
+    remainingSeconds: number | null;
+  } | null>(
+    isVipInitial
+      ? {
+          allowed: true,
+          isVip: true,
+          consumedSeconds: 0,
+          remainingSeconds: null,
+        }
+      : null
+  );
+
+
+  // Sinkronkan status hak akses ketika jendela/tab kembali aktif (fokus)
+  // Misalnya pengguna membuka tab lain untuk login, lalu kembali ke tab ini
+  useEffect(() => {
+    const handleFocus = async () => {
+      if (mediaType === "MOVIE") {
+        try {
+          const res = await checkMovieWatchAccessAction(tmdbId);
+          if (res.allowed || res.reason !== "UNAUTHENTICATED") {
+            setIsLoginModalOpen(false);
+          }
+          setMovieEntitlement({
+            allowed: res.allowed,
+            isVip: res.isVip,
+            consumedSeconds: res.consumedSeconds,
+            remainingSeconds: res.remainingSeconds,
+          });
+        } catch {}
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [mediaType, tmdbId]);
 
   // Deteksi navigasi rute Next.js untuk menghentikan pemutaran
   const pathname = usePathname();
@@ -107,6 +178,7 @@ export function EmbeddedPlayer({
       }
     }
 
+    setServerStreamUrl(null);
     setIsPlaying(false);
     setIsLoading(false);
   }, []);
@@ -167,6 +239,72 @@ export function EmbeddedPlayer({
     }).catch(() => {});
   }, [tmdbId, mediaType, seasonNumber, episodeNumber, activeProvider, title, posterPath, isPlaying]);
 
+  // Ambil data kuota film (Tahap 9) saat media berganti untuk indikator badge kontrol
+  useEffect(() => {
+    if (mediaType !== "MOVIE") return;
+
+    let isMounted = true;
+    checkMovieWatchAccessAction(tmdbId)
+      .then((res) => {
+        if (!isMounted) return;
+        setMovieEntitlement({
+          allowed: res.allowed,
+          isVip: res.isVip,
+          consumedSeconds: res.consumedSeconds,
+          remainingSeconds: res.remainingSeconds,
+        });
+      })
+      .catch((err) => {
+        console.warn("Gagal memeriksa hak akses film:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [mediaType, tmdbId]);
+
+  // Heartbeat konsumsi durasi film Free (interval 10 detik saat video sedang diputar)
+  useEffect(() => {
+    if (!isPlaying || mediaType !== "MOVIE") return;
+
+    const HEARTBEAT_INTERVAL_MS = 10000;
+    const DELTA_SECONDS = 10;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const result = await recordMovieHeartbeatAction({
+          tmdbId,
+          deltaSeconds: DELTA_SECONDS,
+        });
+
+        setMovieEntitlement((prev) => ({
+          allowed: result.allowed,
+          isVip: prev?.isVip ?? false,
+          consumedSeconds: result.consumedSeconds,
+          remainingSeconds: result.remainingSeconds,
+        }));
+
+        if (!result.allowed || result.reachedLimit) {
+          // Hentikan pemutaran segera sesuai Acceptance Criteria 7.4
+          stopAllPlayback();
+          setPremiumModalState({
+            isOpen: true,
+            reason: "MOVIE_LIMIT_REACHED",
+            message:
+              result.message ||
+              "Batas tontonan Free untuk film ini (60 menit pemutaran aktual) telah tercapai. Aktifkan Premium VIP untuk melanjutkan menonton hingga selesai tanpa jeda batas.",
+          });
+        }
+      } catch (err) {
+        console.warn("Heartbeat playback gagal:", err);
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [isPlaying, mediaType, tmdbId, stopAllPlayback]);
+
   const rawStreamUrl = getStreamUrl({
     providerId: activeProvider,
     mediaType,
@@ -178,15 +316,72 @@ export function EmbeddedPlayer({
   });
 
   // Saat pengguna secara eksplisit menekan tombol Play, aktifkan autoplay=1 pada URL embed
-  const streamUrl = rawStreamUrl
+  const streamUrl = serverStreamUrl || (isPlaying && rawStreamUrl
     ? rawStreamUrl.includes("enablejsapi=1")
       ? rawStreamUrl.replace("autoplay=0", "autoplay=1")
       : rawStreamUrl
-    : null;
+    : null);
 
-  const handleStartPlay = () => {
+  const handleStartPlay = async () => {
     setIsLoading(true);
-    setIsPlaying(true);
+
+    try {
+      const result = await getPlaybackSourceAction({
+        mediaType,
+        tmdbId,
+        seasonNumber: mediaType === "TV" ? seasonNumber : undefined,
+        episodeNumber: mediaType === "TV" ? episodeNumber : undefined,
+        providerId: activeProvider,
+        youtubeKey: youtubeKey || undefined,
+        licensedUrl: licensedUrl || undefined,
+      });
+
+      if (mediaType === "MOVIE" && result.consumedSeconds !== undefined) {
+        setMovieEntitlement({
+          allowed: result.allowed,
+          isVip: result.isVip || false,
+          consumedSeconds: result.consumedSeconds,
+          remainingSeconds: result.remainingSeconds ?? null,
+        });
+      }
+
+      if (!result.allowed) {
+        setIsLoading(false);
+        setServerStreamUrl(null);
+        setIsPlaying(false);
+
+        if (result.reason === "UNAUTHENTICATED") {
+          if (!isAuthenticated) {
+            setIsLoginModalOpen(true);
+          }
+        } else if (result.reason === "MOVIE_LIMIT_REACHED") {
+          setPremiumModalState({
+            isOpen: true,
+            reason: "MOVIE_LIMIT_REACHED",
+            message: result.message,
+          });
+        } else {
+          setPremiumModalState({
+            isOpen: true,
+            reason: "EPISODE_LIMIT_REACHED",
+            usedEpisodes: result.usedEpisodes,
+            episodeLimit: result.episodeLimit || 5,
+            remainingEpisodes: result.remainingEpisodes || 0,
+            message: result.message,
+          });
+        }
+        return;
+      }
+
+      setServerStreamUrl(result.streamUrl);
+      setIsLoading(false);
+      setIsPlaying(true);
+    } catch (err) {
+      console.warn("Gagal verifikasi izin putar:", err);
+      setIsLoading(false);
+      setServerStreamUrl(null);
+      setIsPlaying(false);
+    }
   };
 
   const handleSelectProvider = (providerId: StreamingProviderId) => {
@@ -194,18 +389,16 @@ export function EmbeddedPlayer({
       stopAllPlayback();
       setActiveProvider(providerId);
       setIsCompleted(false);
-      // Jika pengguna sebelumnya sudah memutar, lanjutkan ke provider baru
+      // Jika pengguna sebelumnya sudah memutar, verifikasi kembali izin sebelum melanjutkan ke provider baru
       if (isPlaying) {
-        setIsLoading(true);
-        setIsPlaying(true);
+        handleStartPlay();
       }
     }
   };
 
   const handleRefresh = () => {
-    setIsLoading(true);
     setRefreshKey((prev) => prev + 1);
-    setIsPlaying(true);
+    handleStartPlay();
   };
 
   const handleMarkCompleted = async () => {
@@ -292,6 +485,27 @@ export function EmbeddedPlayer({
             );
           })}
         </div>
+
+        {/* Indikator Kuota Film (Free vs VIP) */}
+        {mediaType === "MOVIE" && movieEntitlement && (
+          <div className="flex items-center gap-2">
+            {movieEntitlement.isVip ? (
+              <div className="flex items-center gap-1.5 rounded-xl border border-[#D9A52E]/40 bg-[#D9A52E]/10 px-3 py-1.5 text-xs font-bold text-[#D9A52E] shadow-sm">
+                <Crown size={14} weight="fill" />
+                <span>VIP Bebas Kuota 60 Menit</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 rounded-xl border border-[#292929] bg-[#171717] px-3 py-1.5 text-xs text-[#A3A3A3]">
+                <Clock size={14} className="text-[#D9A52E]" />
+                <span>
+                  {movieEntitlement.remainingSeconds !== null
+                    ? `Sisa Kuota: ${Math.max(0, Math.ceil(movieEntitlement.remainingSeconds / 60))} menit`
+                    : "Kuota Free: 60 Menit / Film"}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tombol Aksi Kanan (Stop, Reload, Tandai Selesai, Next Episode) */}
         <div className="flex items-center gap-2">
@@ -516,6 +730,35 @@ export function EmbeddedPlayer({
           </div>
         )}
       </div>
+
+      {/* 4. Modal Autentikasi Wajib Login Sebelum Menonton (Addendum Tahap 9) */}
+      <LoginRequiredModal
+        isOpen={isLoginModalOpen && !isAuthenticated}
+        onClose={() => setIsLoginModalOpen(false)}
+        isAuthenticated={isAuthenticated}
+        callbackUrl={
+          mediaType === "TV"
+            ? `/tv/${tmdbId}?season=${seasonNumber}&episode=${episodeNumber}`
+            : `/movie/${tmdbId}`
+        }
+        mediaTitle={title}
+        mediaType={mediaType}
+        seasonNumber={seasonNumber}
+        episodeNumber={episodeNumber}
+      />
+
+      {/* 5. Modal Paywall Kuota Premium (Addendum Tahap 9) */}
+      <PremiumRequiredModal
+        isOpen={premiumModalState.isOpen}
+        onClose={() => setPremiumModalState((prev) => ({ ...prev, isOpen: false }))}
+        reason={premiumModalState.reason}
+        usedEpisodes={premiumModalState.usedEpisodes}
+        episodeLimit={premiumModalState.episodeLimit}
+        remainingEpisodes={premiumModalState.remainingEpisodes}
+        consumedSeconds={movieEntitlement?.consumedSeconds || 3600}
+        movieLimitSeconds={3600}
+        customMessage={premiumModalState.message}
+      />
     </div>
   );
 }

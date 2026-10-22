@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { auth } from "@/auth";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { getUserSubscriptionStatus } from "@/services/subscription.service";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -68,7 +69,22 @@ export const viewport: Viewport = {
 async function HeaderWithAuth() {
   await connection();
   const session = await auth();
-  return <SiteHeader user={session?.user} />;
+  const subStatus = session?.user?.id
+    ? await getUserSubscriptionStatus(session.user.id)
+    : null;
+
+  return (
+    <SiteHeader
+      user={
+        session?.user
+          ? {
+              ...session.user,
+              isVip: subStatus?.isVip || false,
+            }
+          : null
+      }
+    />
+  );
 }
 
 export default function RootLayout({
