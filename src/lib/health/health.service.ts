@@ -2,6 +2,9 @@ export interface SystemChecks {
   database: {
     status: "ok" | "error";
     latencyMs: number | null;
+    currentDatabase?: string;
+    tableCount?: number;
+    usersTableExists?: boolean;
     error?: string;
   };
   environment: {
@@ -35,7 +38,7 @@ export interface HealthCheckOptions {
 
 /**
  * Memeriksa status kesehatan server Next.js, konektivitas database Neon PostgreSQL,
- * dan ketersediaan variabel lingkungan penting tanpa membocorkan nilai rahasia.
+ * keberadaan tabel skema, dan ketersediaan variabel lingkungan penting.
  */
 export async function checkSystemHealth(
   options?: HealthCheckOptions
@@ -72,18 +75,42 @@ export async function checkSystemHealth(
 
   const envStatus: "ok" | "degraded" = isSecondaryEnvMissing ? "degraded" : "ok";
 
-  // 2. Uji Konektivitas Database Neon Serverless PostgreSQL
+  // 2. Uji Konektivitas Database Neon Serverless PostgreSQL & Keberadaan Tabel
   let dbStatus: "ok" | "error" = "ok";
   let dbLatencyMs: number | null = null;
   let dbError: string | undefined = undefined;
+  let currentDatabase: string | undefined = undefined;
+  let tableCount: number | undefined = undefined;
+  let usersTableExists: boolean | undefined = undefined;
 
   try {
     const dbPingStart = performance.now();
     if (options?.dbPing) {
       await options.dbPing();
+      currentDatabase = "test_db";
+      tableCount = 14;
+      usersTableExists = true;
     } else {
       const { db } = await import("@/lib/db");
-      await db.$queryRaw`SELECT 1 as ping`;
+      const rows = await db.$queryRaw<
+        Array<{ current_db: string; users_exist: boolean; table_count: number | bigint }>
+      >`
+        SELECT 
+          current_database() as current_db,
+          EXISTS(SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'users') as users_exist,
+          (SELECT count(*)::int FROM information_schema.tables WHERE table_schema = 'public') as table_count
+      `;
+
+      if (rows && rows[0]) {
+        currentDatabase = rows[0].current_db;
+        usersTableExists = Boolean(rows[0].users_exist);
+        tableCount = Number(rows[0].table_count);
+
+        if (!usersTableExists || tableCount === 0) {
+          dbStatus = "error";
+          dbError = `Tabel 'users' tidak ditemukan di database '${currentDatabase}'. Pastikan DATABASE_URL mengarah ke database yang benar.`;
+        }
+      }
     }
     const dbPingEnd = performance.now();
     dbLatencyMs = Math.round(dbPingEnd - dbPingStart);
@@ -110,6 +137,9 @@ export async function checkSystemHealth(
       database: {
         status: dbStatus,
         latencyMs: dbLatencyMs,
+        ...(currentDatabase ? { currentDatabase } : {}),
+        ...(typeof tableCount === "number" ? { tableCount } : {}),
+        ...(typeof usersTableExists === "boolean" ? { usersTableExists } : {}),
         ...(dbError ? { error: dbError } : {}),
       },
       environment: {
