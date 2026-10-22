@@ -121,7 +121,7 @@ export async function handleLogin(
 
   try {
     await signIn("credentials", {
-      email: parsed.data.email,
+      email: parsed.data.email.toLowerCase(),
       password: parsed.data.password,
       redirectTo: safeCallbackUrl,
     });
@@ -133,7 +133,7 @@ export async function handleLogin(
         case "CredentialsSignin":
           return {
             success: false,
-            error: "Email atau kata sandi yang Anda masukkan salah.",
+            error: "Email atau kata sandi yang Anda masukkan salah. Jika belum memiliki akun, silakan klik 'Daftar Sekarang'.",
           };
         default:
           return {
