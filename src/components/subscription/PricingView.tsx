@@ -2,6 +2,7 @@
 
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -11,8 +12,31 @@ import {
   Spinner,
   Info,
   CalendarCheck,
+  CreditCard,
+  Lightning,
 } from "@phosphor-icons/react";
 import { activateSimulatedVipAction } from "@/app/actions/subscription";
+import {
+  createMidtransSnapTokenAction,
+  confirmMidtransPaymentAction,
+} from "@/app/actions/payment";
+import { MidtransModal } from "./MidtransModal";
+
+declare global {
+  interface Window {
+    snap?: {
+      pay: (
+        token: string,
+        options: {
+          onSuccess?: (result: unknown) => void;
+          onPending?: (result: unknown) => void;
+          onError?: (result: unknown) => void;
+          onClose?: () => void;
+        }
+      ) => void;
+    };
+  }
+}
 
 export interface PlanData {
   id: string;
@@ -33,6 +57,7 @@ interface PricingViewProps {
   vipEndDate: Date | string | null;
   isAuthenticated: boolean;
   simulatedBillingEnabled: boolean;
+  clientKey?: string;
 }
 
 export function PricingView({
@@ -42,14 +67,155 @@ export function PricingView({
   vipEndDate,
   isAuthenticated,
   simulatedBillingEnabled,
+  clientKey = "",
 }: PricingViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [isPayingMidtrans, setIsPayingMidtrans] = useState<boolean>(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
     null
   );
 
-  const handleSimulatedUpgrade = () => {
+  // State untuk Fallback Simulator Midtrans Modal jika kunci belum dipasang di .env.local
+  const [simulatedModalData, setSimulatedModalData] = useState<{
+    isOpen: boolean;
+    orderId: string;
+    grossAmount: number;
+    planName: string;
+    redirectUrl?: string;
+  }>({
+    isOpen: false,
+    orderId: "",
+    grossAmount: 49000,
+    planName: "LayarRika Premium VIP",
+  });
+
+  // 1. Alur Pembayaran Utama: Menggunakan Midtrans Sandbox Snap
+  const handleMidtransPayment = async () => {
+    if (!isAuthenticated) {
+      router.push("/login?callbackUrl=/pricing");
+      return;
+    }
+
+    setFeedback(null);
+    setIsPayingMidtrans(true);
+
+    try {
+      const res = await createMidtransSnapTokenAction("premium-monthly");
+
+      if (!res.success) {
+        setFeedback({
+          type: "error",
+          message: res.error || "Gagal membuat sesi pembayaran Midtrans.",
+        });
+        setIsPayingMidtrans(false);
+        return;
+      }
+
+      // Pastikan snap.js termuat dengan baik jika menggunakan Midtrans Sandbox riil
+      let snapAvailable = Boolean(typeof window !== "undefined" && window.snap);
+      if (!snapAvailable && clientKey) {
+        snapAvailable = await new Promise<boolean>((resolve) => {
+          const existing = document.querySelector('script[src*="midtrans.com/snap/snap.js"]');
+          if (existing) {
+            if (window.snap) return resolve(true);
+            existing.addEventListener("load", () => resolve(true));
+            existing.addEventListener("error", () => resolve(false));
+            setTimeout(() => resolve(Boolean(window.snap)), 2000);
+            return;
+          }
+          const script = document.createElement("script");
+          script.src =
+            process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+              ? "https://app.midtrans.com/snap/snap.js"
+              : "https://app.sandbox.midtrans.com/snap/snap.js";
+          script.setAttribute("data-client-key", clientKey);
+          script.async = true;
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+          setTimeout(() => resolve(Boolean(window.snap)), 2000);
+        });
+      }
+
+      // Skenario A: Kunci Midtrans Sandbox Asli & Snap JS Siap di Browser
+      if (!res.isSimulated && res.token && snapAvailable && window.snap) {
+        window.snap.pay(res.token, {
+          onSuccess: async () => {
+            setIsPayingMidtrans(true);
+            const confirmRes = await confirmMidtransPaymentAction(res.orderId!);
+            setIsPayingMidtrans(false);
+            if (confirmRes.success) {
+              setFeedback({
+                type: "success",
+                message: confirmRes.message || "Pembayaran Midtrans Berhasil! Paket VIP Anda telah aktif.",
+              });
+              router.refresh();
+            } else {
+              setFeedback({
+                type: "error",
+                message: confirmRes.error || "Gagal mengonfirmasi status pembayaran.",
+              });
+            }
+          },
+          onPending: () => {
+            setIsPayingMidtrans(false);
+            setFeedback({
+              type: "success",
+              message: "Transaksi Midtrans sedang menunggu pembayaran. Selesaikan pembayaran pada channel pilihan Anda.",
+            });
+          },
+          onError: () => {
+            setIsPayingMidtrans(false);
+            setFeedback({
+              type: "error",
+              message: "Transaksi pembayaran Midtrans gagal atau dibatalkan.",
+            });
+          },
+          onClose: () => {
+            setIsPayingMidtrans(false);
+          },
+        });
+      } else {
+        // Skenario B: Mode Simulasi Terintegrasi (Kunci belum dipasang atau mode mock)
+        setIsPayingMidtrans(false);
+        setSimulatedModalData({
+          isOpen: true,
+          orderId: res.orderId || `LR-VIP-SANDBOX-${Date.now()}`,
+          grossAmount: 49000,
+          planName: "LayarRika Premium VIP",
+          redirectUrl: res.redirectUrl,
+        });
+      }
+    } catch (err) {
+      console.error("Gagal memulai pembayaran Midtrans:", err);
+      setFeedback({
+        type: "error",
+        message: "Terjadi kesalahan saat memproses pembayaran.",
+      });
+      setIsPayingMidtrans(false);
+    }
+  };
+
+  // Callback saat pembayaran pada Midtrans Simulator Modal selesai
+  const handleSimulatedPaySuccess = async (orderId: string) => {
+    const confirmRes = await confirmMidtransPaymentAction(orderId);
+    if (confirmRes.success) {
+      setFeedback({
+        type: "success",
+        message: confirmRes.message || "Pembayaran Berhasil! Paket Premium VIP Anda telah aktif.",
+      });
+      router.refresh();
+    } else {
+      setFeedback({
+        type: "error",
+        message: confirmRes.error || "Gagal mengonfirmasi status pembayaran.",
+      });
+    }
+  };
+
+  // 2. Alur Pembayaran Cepat (Tanpa Gateway untuk Kebutuhan Demo Instan)
+  const handleQuickUpgrade = () => {
     if (!isAuthenticated) {
       router.push("/login?callbackUrl=/pricing");
       return;
@@ -76,7 +242,7 @@ export function PricingView({
       } else {
         setFeedback({
           type: "error",
-          message: result.error || "Gagal mengaktifkan simulasi VIP.",
+          message: result.error || "Gagal mengaktifkan VIP.",
         });
       }
     });
@@ -84,6 +250,30 @@ export function PricingView({
 
   return (
     <div className="space-y-12 max-w-6xl mx-auto">
+      {/* Script Tag Midtrans Snap Sandbox */}
+      {clientKey && (
+        <Script
+          src={
+            process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION === "true"
+              ? "https://app.midtrans.com/snap/snap.js"
+              : "https://app.sandbox.midtrans.com/snap/snap.js"
+          }
+          data-client-key={clientKey}
+          strategy="afterInteractive"
+        />
+      )}
+
+      {/* Modal Simulasi Midtrans Sandbox */}
+      <MidtransModal
+        isOpen={simulatedModalData.isOpen}
+        orderId={simulatedModalData.orderId}
+        grossAmount={simulatedModalData.grossAmount}
+        planName={simulatedModalData.planName}
+        redirectUrl={simulatedModalData.redirectUrl}
+        onClose={() => setSimulatedModalData((prev) => ({ ...prev, isOpen: false }))}
+        onPaySuccess={handleSimulatedPaySuccess}
+      />
+
       {/* Feedback Banner */}
       {feedback && (
         <div
@@ -164,7 +354,7 @@ export function PricingView({
                   <div className="text-[11px] text-neutral-500 mt-1">
                     {plan.price === 0
                       ? "Akses gratis tanpa biaya langganan"
-                      : "Simulasi pembayaran demo akademik (tanpa biaya nyata)"}
+                      : "Didukung Midtrans Sandbox (GoPay, Virtual Account, Kartu Uji Coba)"}
                   </div>
                 </div>
 
@@ -218,33 +408,50 @@ export function PricingView({
                     >
                       <span>Masuk untuk Aktivasi VIP</span>
                     </Link>
-                  ) : simulatedBillingEnabled ? (
-                    <button
-                      type="button"
-                      onClick={handleSimulatedUpgrade}
-                      disabled={isPending}
-                      className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-gradient-to-r from-[#D9A52E] to-[#b3821c] hover:from-[#e5b33d] hover:to-[#c49226] text-neutral-950 font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#D9A52E]/20 transition disabled:opacity-50 cursor-pointer"
-                    >
-                      {isPending ? (
-                        <>
-                          <Spinner size={16} className="animate-spin" />
-                          <span>Mengaktifkan VIP...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Crown size={18} weight="bold" />
-                          <span>Aktifkan Simulasi VIP (Gratis Demo)</span>
-                        </>
-                      )}
-                    </button>
                   ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-neutral-800 text-neutral-500 font-bold text-xs uppercase tracking-wider cursor-not-allowed"
-                    >
-                      <span>Simulasi Billing Nonaktif</span>
-                    </button>
+                    <div className="space-y-2.5">
+                      {/* Tombol Utama: Bayar dengan Midtrans Sandbox */}
+                      <button
+                        type="button"
+                        onClick={handleMidtransPayment}
+                        disabled={isPayingMidtrans || isPending}
+                        className="inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-gradient-to-r from-[#D9A52E] to-[#b3821c] hover:from-[#e5b33d] hover:to-[#c49226] text-neutral-950 font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-[#D9A52E]/25 transition disabled:opacity-50 cursor-pointer"
+                      >
+                        {isPayingMidtrans ? (
+                          <>
+                            <Spinner size={16} className="animate-spin" />
+                            <span>Menghubungkan Midtrans...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard size={18} weight="bold" />
+                            <span>Bayar dengan Midtrans Sandbox</span>
+                          </>
+                        )}
+                      </button>
+
+                      {/* Tombol Alternatif: Aktivasi Langsung (Demo Instan) */}
+                      {simulatedBillingEnabled && (
+                        <button
+                          type="button"
+                          onClick={handleQuickUpgrade}
+                          disabled={isPayingMidtrans || isPending}
+                          className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-neutral-700 bg-neutral-900/60 hover:bg-neutral-800 text-neutral-300 hover:text-white font-semibold text-[11px] transition disabled:opacity-50 cursor-pointer"
+                        >
+                          {isPending ? (
+                            <>
+                              <Spinner size={14} className="animate-spin" />
+                              <span>Mengaktifkan...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lightning size={14} weight="fill" className="text-[#D9A52E]" />
+                              <span>Aktivasi Cepat (Bypass Tanpa Gateway)</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
                   )
                 ) : (
                   // Free Plan Button
@@ -269,15 +476,15 @@ export function PricingView({
         })}
       </div>
 
-      {/* Academic Simulation Notice */}
+      {/* Academic Simulation & Midtrans Notice */}
       <div className="p-6 rounded-2xl border border-neutral-800 bg-neutral-900/30 text-xs text-neutral-400 flex items-start gap-3">
         <Info size={22} className="text-[#D9A52E] shrink-0 mt-0.5" />
         <div className="space-y-1">
           <span className="font-bold text-white block">
-            Catatan Simulasi Transaksi Akademik:
+            Panduan Uji Coba Pembayaran Midtrans Sandbox:
           </span>
           <p className="leading-relaxed">
-            Platform LayarRika tidak memproses transaksi kartu kredit atau transfer perbankan nyata. Tombol &quot;Aktifkan Simulasi VIP&quot; berfungsi sebagai pengubah status hak akses internal akun di database Neon PostgreSQL untuk mendemonstrasikan penghilangan batas kuota episode dan film secara aman.
+            Integrasi ini menggunakan lingkungan <strong>Midtrans Sandbox</strong> untuk demonstrasi transaksi pembayaran aman. Anda dapat menguji pembayaran simulasi menggunakan GoPay/QRIS mock, Virtual Account, atau nomor kartu uji coba 3DS (<code>4811 1111 1111 1114</code>). Setelah pembayaran diselesaikan, server akan mencatat langganan Premium VIP aktif ke basis data Neon PostgreSQL.
           </p>
         </div>
       </div>

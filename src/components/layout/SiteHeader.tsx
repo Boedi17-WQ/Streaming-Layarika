@@ -15,7 +15,7 @@ import {
   X,
   Crown,
 } from "@phosphor-icons/react";
-import { handleSignOut } from "@/app/actions/auth";
+import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
 import { checkNavActive, NavItemMatch } from "@/lib/navigation/active-nav";
 
 export interface SiteHeaderUser {
@@ -89,6 +89,7 @@ function getMobileNavClass(match: NavItemMatch, isVip = false): string {
 
 export function SiteHeader({ user }: SiteHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const pathname = usePathname();
   const [searchParamsType, setSearchParamsType] = useState<string | null>(null);
 
@@ -110,7 +111,8 @@ export function SiteHeader({ user }: SiteHeaderProps) {
   const profileMatch = checkNavActive(pathname, searchParamsType, "/profile");
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#292929] bg-[#0A0A0A]/90 backdrop-blur-md transition-colors">
+    <>
+      <header className="sticky top-0 z-50 w-full border-b border-[#292929] bg-[#0A0A0A]/90 backdrop-blur-md transition-colors">
       <Suspense fallback={null}>
         <SearchParamsWatcher onTypeChange={handleTypeChange} />
       </Suspense>
@@ -290,16 +292,15 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                   {user.name || "Pengguna"}
                 </span>
               </Link>
-              <form action={handleSignOut}>
-                <button
-                  type="submit"
-                  title="Keluar dari akun"
-                  className="flex items-center gap-1.5 rounded-lg border border-[#292929] bg-[#171717] px-2.5 py-1.5 text-xs font-medium text-[#A3A3A3] transition hover:border-red-500/40 hover:bg-red-950/20 hover:text-red-400 cursor-pointer"
-                >
-                  <SignOut size={14} />
-                  <span className="hidden lg:inline">Keluar</span>
-                </button>
-              </form>
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(true)}
+                title="Keluar dari akun"
+                className="flex items-center gap-1.5 rounded-lg border border-[#292929] bg-[#171717] px-2.5 py-1.5 text-xs font-medium text-[#A3A3A3] transition hover:border-red-500/40 hover:bg-red-950/20 hover:text-red-400 cursor-pointer"
+              >
+                <SignOut size={14} />
+                <span className="hidden lg:inline">Keluar</span>
+              </button>
             </div>
           ) : (
             <Link
@@ -479,16 +480,17 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                     </span>
                   )}
                 </Link>
-                <form action={handleSignOut} className="w-full">
-                  <button
-                    type="submit"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-950/20 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-900/40 cursor-pointer"
-                  >
-                    <SignOut size={16} />
-                    <span>Keluar dari LayarRika</span>
-                  </button>
-                </form>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-950/20 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-900/40 cursor-pointer"
+                >
+                  <SignOut size={16} />
+                  <span>Keluar dari LayarRika</span>
+                </button>
               </div>
             ) : (
               <Link
@@ -504,5 +506,14 @@ export function SiteHeader({ user }: SiteHeaderProps) {
         </nav>
       )}
     </header>
-  );
+
+    {/* Modal Konfirmasi Keluar Akun */}
+    <LogoutConfirmModal
+      isOpen={showLogoutConfirm}
+      onClose={() => setShowLogoutConfirm(false)}
+      userName={user?.name}
+      userEmail={user?.email}
+    />
+  </>
+);
 }

@@ -75,6 +75,7 @@ async function PricingDataLoader() {
       vipEndDate={userStatus.endDate}
       isAuthenticated={!userStatus.isGuest}
       simulatedBillingEnabled={SIMULATED_BILLING_ENABLED}
+      clientKey={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ""}
     />
   );
 }

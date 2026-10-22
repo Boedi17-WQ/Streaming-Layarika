@@ -14,10 +14,10 @@ export interface AuthActionResult {
 
 /**
  * Server Action resmi untuk mengakhiri sesi autentikasi pengguna
- * dan mengalihkan ke halaman beranda.
+ * dengan menghapus cookie sesi secara aman dan instan tanpa blocking.
  */
 export async function handleSignOut() {
-  await authSignOut({ redirectTo: "/" });
+  await authSignOut({ redirect: false });
 }
 
 /**

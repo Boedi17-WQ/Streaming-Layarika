@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import Image from "next/image";
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { Container } from "@/components/ui/Container";
 import { getUserWatchlist } from "@/services/watchlist.service";
 import { getUserWatchHistory } from "@/services/history.service";
@@ -13,8 +13,8 @@ import {
   WatchlistCardItem,
   WatchHistoryCardItem,
 } from "@/components/profile/ProfileCollections";
+import { ProfileSignOutButton } from "@/components/profile/ProfileSignOutButton";
 import {
-  SignOut,
   ShieldCheck,
   ArrowLeft,
   Crown,
@@ -140,21 +140,11 @@ export default async function ProfilePage() {
               </div>
             </div>
 
-            {/* Tombol Sign Out Resmi */}
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <button
-                type="submit"
-                className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-950/20 px-4 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-900/40 hover:border-red-500/60"
-              >
-                <SignOut size={16} />
-                <span>Keluar</span>
-              </button>
-            </form>
+            {/* Tombol Sign Out Resmi dengan Konfirmasi */}
+            <ProfileSignOutButton
+              userName={session.user.name}
+              userEmail={session.user.email}
+            />
           </div>
         </div>
 
