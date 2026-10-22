@@ -2,13 +2,13 @@ import type { NextConfig } from "next";
 
 const cspHeader = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline';
+  script-src 'self' 'unsafe-eval' 'unsafe-inline' https://app.sandbox.midtrans.com https://app.midtrans.com;
   style-src 'self' 'unsafe-inline';
-  img-src 'self' data: blob: https://image.tmdb.org https://avatars.githubusercontent.com https://i.ytimg.com https://raw.githubusercontent.com;
+  img-src 'self' data: blob: https://image.tmdb.org https://avatars.githubusercontent.com https://i.ytimg.com https://raw.githubusercontent.com https://*.midtrans.com;
   font-src 'self' data:;
-  frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://multiembed.mov https://*.multiembed.mov https://vsembed.su https://*.vsembed.su;
+  frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://multiembed.mov https://*.multiembed.mov https://vsembed.su https://*.vsembed.su https://app.sandbox.midtrans.com https://app.midtrans.com;
   media-src 'self' https: blob:;
-  connect-src 'self' https://api.themoviedb.org https://image.tmdb.org;
+  connect-src 'self' https://api.themoviedb.org https://image.tmdb.org https://api.sandbox.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://app.midtrans.com;
   frame-ancestors 'none';
   form-action 'self';
   base-uri 'self';
@@ -17,6 +17,7 @@ const cspHeader = `
   .trim();
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   cacheComponents: true,
   partialPrefetching: true,
   images: {

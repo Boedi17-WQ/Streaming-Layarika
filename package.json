@@ -19,6 +19,7 @@
     "test:catalog": "tsx src/lib/tmdb/catalog.test.ts",
     "test:integration": "tsx src/__tests__/tahap5-integration.test.ts",
     "test:admin": "tsx src/lib/admin/admin.test.ts",
+    "test:health": "tsx src/lib/deployment/health.test.ts",
     "admin:set": "tsx scripts/set-admin.ts"
   },
   "dependencies": {

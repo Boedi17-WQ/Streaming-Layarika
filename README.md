@@ -20,6 +20,7 @@ LayarRika adalah aplikasi full-stack modern yang dikembangkan untuk menyajikan p
 - **Tahap 7 (Selesai)**: Sistem hak akses berjenjang (Free vs VIP), integrasi Midtrans Sandbox Virtual Account (BCA, BNI, BRI), validasi kuota harian Asia/Jakarta, dan modal simulasi transaksi.
 - **Tahap 8 (Selesai)**: Portal Admin Sinematik (`/admin`), manajemen aset video legal CRUD (HLS / MP4), player preview test interaktif, manajemen pengguna & promosi wewenang (USER/ADMIN), serta aktivasi manual VIP.
 - **Tahap 9 (Selesai)**: Testing menyeluruh 19 skenario akses kuota tontonan, validasi Zod, pencegahan race-condition, dan proteksi role guard.
+- **Tahap 10 (Selesai)**: Kesiapan Deployment Publik ke Vercel & Neon Production Database, endpoint monitoring kesehatan server & database (`/api/health`), konfigurasi webhook Midtrans resmi, audit environment variables produksi, pengerasan CSP, dan panduan lengkap ([DEPLOYMENT.md](file:///d:/kuliah/semester5/rpl/ProjectLayarRika/DEPLOYMENT.md)).
 
 ---
 
@@ -201,7 +202,10 @@ npx tsc --noEmit
 # 3. Unit Test Validasi Progres Tontonan
 npx tsx src/lib/validations/progress.test.ts
 
-# 4. Pengujian Production Build
+# 4. Pengujian Health Check & Uptime Cloud (Tahap 10)
+npm run test:health
+
+# 5. Pengujian Production Build
 npm run build
 ```
 
@@ -219,7 +223,7 @@ npm run build
 - [x] **Tahap 7**: Sistem Hak Akses Free & Premium VIP (Integrasi Midtrans Sandbox & Kuota Tontonan).
 - [x] **Tahap 8**: Panel Admin Pengelolaan Aset Video & Episode (`/admin`).
 - [x] **Tahap 9**: Testing Menyeluruh (Unit, Integration, E2E) & Security Hardening.
-- [ ] **Tahap 10**: Deployment Publik ke Vercel & Neon Production Database.
+- [x] **Tahap 10**: Deployment Publik ke Vercel & Neon Production Database ([Panduan Deployment](file:///d:/kuliah/semester5/rpl/ProjectLayarRika/DEPLOYMENT.md)).
 
 ---
 *Proyek Rekayasa Perangkat Lunak (RPL) — LayarRika 2026*
