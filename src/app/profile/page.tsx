@@ -8,6 +8,7 @@ import { Container } from "@/components/ui/Container";
 import { getUserWatchlist } from "@/services/watchlist.service";
 import { getUserWatchHistory } from "@/services/history.service";
 import { getUserEntitlement } from "@/services/subscription.service";
+import { getUserInvoices } from "@/services/invoice.service";
 import {
   ProfileCollections,
   WatchlistCardItem,
@@ -22,6 +23,9 @@ import {
   Television,
   FilmReel,
   ArrowRight,
+  Receipt,
+  Printer,
+  ArrowSquareOut,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata: Metadata = {
@@ -47,11 +51,12 @@ export default async function ProfilePage() {
   const { user } = session;
   const initial = user.name ? user.name.charAt(0).toUpperCase() : "U";
 
-  // Ambil koleksi personal watchlist, riwayat tontonan, dan entitlement langganan pengguna dari database Neon
-  const [rawWatchlist, rawHistory, entitlement] = await Promise.all([
+  // Ambil koleksi personal watchlist, riwayat tontonan, entitlement langganan, dan faktur pengguna dari database Neon
+  const [rawWatchlist, rawHistory, entitlement, invoices] = await Promise.all([
     getUserWatchlist(user.id),
     getUserWatchHistory(user.id),
     getUserEntitlement(user.id),
+    getUserInvoices(user.id),
   ]);
 
   // Serialisasi data tanggal untuk Client Component
@@ -221,16 +226,49 @@ export default async function ProfilePage() {
                       })}`
                     : "Batas tontonan Free berlaku setiap hari"}
                 </p>
+
+                {/* Tombol Lihat Faktur / Invoice di bawah VIP Member Aktif */}
+                {entitlement.isVip && (
+                  <div className="pt-2">
+                    <Link
+                      href={
+                        invoices.length > 0
+                          ? `/invoice/${encodeURIComponent(invoices[0].orderId)}`
+                          : "#riwayat-faktur"
+                      }
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[#D9A52E]/40 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 text-[#D9A52E] text-xs font-bold transition shadow-sm cursor-pointer"
+                    >
+                      <Receipt size={14} weight="bold" />
+                      <span>Lihat Faktur / Invoice Pembayaran</span>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
 
-            <Link
-              href="/pricing"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D9A52E] to-[#b3821c] hover:from-[#e5b33d] hover:to-[#c49226] text-neutral-950 text-xs font-bold uppercase tracking-wider transition shadow-md shadow-[#D9A52E]/10"
-            >
-              <span>{entitlement.isVip ? "Kelola / Perpanjang VIP" : "Upgrade ke Premium VIP"}</span>
-              <ArrowRight size={14} weight="bold" />
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {entitlement.isVip && (
+                <Link
+                  href={
+                    invoices.length > 0
+                      ? `/invoice/${encodeURIComponent(invoices[0].orderId)}`
+                      : "#riwayat-faktur"
+                  }
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  <Receipt size={15} className="text-[#D9A52E]" weight="bold" />
+                  <span>Lihat Invoice</span>
+                </Link>
+              )}
+
+              <Link
+                href="/pricing"
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#D9A52E] to-[#b3821c] hover:from-[#e5b33d] hover:to-[#c49226] text-neutral-950 text-xs font-bold uppercase tracking-wider transition shadow-md shadow-[#D9A52E]/10"
+              >
+                <span>{entitlement.isVip ? "Kelola / Perpanjang VIP" : "Upgrade ke Premium VIP"}</span>
+                <ArrowRight size={14} weight="bold" />
+              </Link>
+            </div>
           </div>
 
           {/* Kuota Ringkasan */}
@@ -263,6 +301,105 @@ export default async function ProfilePage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Riwayat Faktur & Transaksi Pembayaran */}
+        <div id="riwayat-faktur" className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5 sm:p-7 shadow-xl space-y-4 scroll-mt-24">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#D9A52E]/10 border border-[#D9A52E]/30 text-[#D9A52E] flex items-center justify-center">
+                <Receipt size={22} weight="fill" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>Faktur & Riwayat Transaksi</span>
+                  {invoices.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[10px] font-mono">
+                      {invoices.length}
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-neutral-400 mt-0.5">
+                  Bukti pembayaran sah untuk paket langganan VIP LayarRika.
+                </p>
+              </div>
+            </div>
+
+            {invoices.length > 0 && (
+              <span className="text-[11px] text-neutral-500">
+                Format PDF Siap Cetak
+              </span>
+            )}
+          </div>
+
+          {invoices.length === 0 ? (
+            <div className="py-6 px-4 text-center rounded-xl bg-neutral-950/40 border border-neutral-800/80 space-y-2">
+              <p className="text-xs text-neutral-400">
+                Belum ada transaksi pembayaran. Pembelian paket VIP akan otomatis mencatat faktur di sini.
+              </p>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#D9A52E] hover:underline"
+              >
+                <span>Lihat Pilihan Paket Langganan</span>
+                <ArrowRight size={12} />
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-neutral-800/70 overflow-hidden">
+              {invoices.map((inv) => (
+                <div
+                  key={inv.orderId}
+                  className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs hover:bg-neutral-800/20 px-2 rounded-xl transition"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-white">
+                        {inv.invoiceNumber}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold uppercase">
+                        Lunas
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-neutral-400">
+                      <span>{inv.planName}</span>
+                      <span>•</span>
+                      <span>
+                        {new Date(inv.transactionDate).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <span>•</span>
+                      <span className="text-neutral-300 font-mono">
+                        Rp {inv.amount.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/invoice/${encodeURIComponent(inv.orderId)}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium transition cursor-pointer"
+                    >
+                      <ArrowSquareOut size={14} />
+                      <span>Lihat Faktur</span>
+                    </Link>
+                    <Link
+                      href={`/invoice/${encodeURIComponent(inv.orderId)}?print=true`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#D9A52E]/30 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 text-[#D9A52E] text-xs font-semibold transition cursor-pointer"
+                    >
+                      <Printer size={14} />
+                      <span>Cetak PDF</span>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tab Koleksi Personal: Watchlist, Lanjutkan Menonton, dan Riwayat */}

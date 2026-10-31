@@ -37,7 +37,7 @@ export interface UserEntitlementSummary extends UserSubscriptionSummary {
 export interface TvEpisodeAccessDecision {
   allowed: boolean;
   isVip: boolean;
-  reason?: "UNAUTHENTICATED" | "EPISODE_LIMIT_REACHED" | "VIP_UNLIMITED" | "WITHIN_FREE_QUOTA";
+  reason?: "UNAUTHENTICATED" | "EPISODE_LIMIT_REACHED" | "VIP_REQUIRED_FOR_EPISODE" | "VIP_UNLIMITED" | "WITHIN_FREE_QUOTA";
   alreadyCounted?: boolean;
   usedEpisodes: number;
   episodeLimit: number | null;
@@ -190,15 +190,20 @@ export async function verifyAndConsumeTvEpisode(
     episodeNumber: number;
   }
 ): Promise<TvEpisodeAccessDecision> {
+  // Aturan Khusus Series: Episode 6 dan seterusnya terkunci khusus VIP Member
+  const isVipLockedEpisode = params.episodeNumber >= 6;
+
   if (!userId) {
     return {
       allowed: false,
       isVip: false,
-      reason: "UNAUTHENTICATED",
+      reason: isVipLockedEpisode ? "VIP_REQUIRED_FOR_EPISODE" : "UNAUTHENTICATED",
       usedEpisodes: 0,
       episodeLimit: 5,
       remainingEpisodes: 0,
-      message: "Silakan masuk ke akun LayarRika Anda untuk memutar episode ini.",
+      message: isVipLockedEpisode
+        ? "Episode 6 dan seterusnya hanya dapat diakses oleh VIP Member. Silakan masuk dan aktifkan VIP untuk menonton."
+        : "Silakan masuk ke akun LayarRika Anda untuk memutar episode ini.",
     };
   }
 
@@ -211,6 +216,20 @@ export async function verifyAndConsumeTvEpisode(
       usedEpisodes: 0,
       episodeLimit: null,
       remainingEpisodes: null,
+    };
+  }
+
+  // Jika pengguna belum VIP dan mencoba memutar episode 6 ke atas: TOLAK AKSES
+  if (isVipLockedEpisode) {
+    return {
+      allowed: false,
+      isVip: false,
+      reason: "VIP_REQUIRED_FOR_EPISODE",
+      usedEpisodes: 5,
+      episodeLimit: 5,
+      remainingEpisodes: 0,
+      message:
+        "Episode 6 dan seterusnya terkunci khusus untuk VIP Member. Beli paket VIP untuk membuka seluruh episode tanpa batasan.",
     };
   }
 
@@ -509,6 +528,24 @@ export async function activateSimulatedVip(userId: string) {
 
   let subscription;
 
+  const orderId = `LR-SIM-${userId.slice(-6).toUpperCase()}-${Date.now()}`;
+
+  // Catat transaksi pembayaran simulasi agar tercatat di faktur & riwayat transaksi
+  try {
+    await db.paymentTransaction.create({
+      data: {
+        orderId,
+        userId,
+        planSlug: premiumPlan.slug,
+        amount: premiumPlan.price,
+        status: "settlement",
+        paymentType: "simulated_upgrade",
+      },
+    });
+  } catch (err) {
+    console.warn("Gagal mencatat transaksi pembayaran simulasi:", err);
+  }
+
   if (existingActive) {
     subscription = await db.userSubscription.update({
       where: { id: existingActive.id },
@@ -536,6 +573,7 @@ export async function activateSimulatedVip(userId: string) {
     startDate,
     endDate,
     subscriptionId: subscription.id,
+    orderId,
   };
 }
 

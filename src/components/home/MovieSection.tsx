@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MovieSectionProps } from "@/types/movie";
 import { MovieCard } from "./MovieCard";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
@@ -6,7 +7,7 @@ export function MovieSection({
   title,
   subtitle,
   movies,
-  viewAllHref = "#",
+  viewAllHref = "/catalog",
 }: MovieSectionProps) {
   if (!movies || movies.length === 0) {
     return null;
@@ -30,7 +31,7 @@ export function MovieSection({
           )}
         </div>
 
-        <a
+        <Link
           href={viewAllHref}
           className="group inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#D9A52E] transition hover:text-[#c49226]"
         >
@@ -40,7 +41,7 @@ export function MovieSection({
             weight="bold"
             className="transition-transform group-hover:translate-x-1"
           />
-        </a>
+        </Link>
       </div>
 
       {/* Responsive Movie Grid */}

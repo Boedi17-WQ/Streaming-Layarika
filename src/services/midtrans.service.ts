@@ -330,8 +330,12 @@ export async function getMidtransTransactionStatus(orderId: string): Promise<{
   paymentType?: string;
   raw?: unknown;
 } | null> {
-  if (!isMidtransConfigured()) {
-    // Mode simulasi: dianggap berhasil jika berawalan SIMULATED_
+  if (
+    !isMidtransConfigured() ||
+    orderId.startsWith("SIMULATED_") ||
+    orderId.startsWith("LR-VIP-SANDBOX-")
+  ) {
+    // Mode simulasi: dianggap berhasil jika berawalan SIMULATED_ / SANDBOX atau Midtrans belum dikonfigurasi
     return {
       status: "settlement",
       fraudStatus: "accept",
@@ -372,8 +376,12 @@ export async function getMidtransTransactionStatus(orderId: string): Promise<{
 
 /**
  * Mengaktifkan langganan VIP setelah pembayaran Midtrans dinyatakan settlement atau capture accept.
+ * Mendukung idempotensi via orderId untuk mencegah dobel perpanjangan hari jika dipanggil berkali-kali.
  */
-export async function fulfillVipSubscription(userId: string): Promise<{
+export async function fulfillVipSubscription(
+  userId: string,
+  orderId?: string
+): Promise<{
   success: boolean;
   planName: string;
   startDate: Date;
@@ -388,48 +396,91 @@ export async function fulfillVipSubscription(userId: string): Promise<{
   }
 
   const now = new Date();
-  const durationMs = (premiumPlan.durationDays || 30) * 24 * 60 * 60 * 1000;
 
-  // Cek apakah pengguna saat ini sudah memiliki langganan aktif
-  const existingActive = await db.userSubscription.findFirst({
-    where: {
-      userId,
-      status: SubscriptionStatus.ACTIVE,
-      endDate: { gte: now },
-    },
-    orderBy: { endDate: "desc" },
-  });
-
-  // Jika sudah ada langganan aktif, perpanjang dari tanggal berakhir sebelumnya
-  const startDate = existingActive ? existingActive.startDate : now;
-  const baseEnd = existingActive ? existingActive.endDate : now;
-  const endDate = new Date(baseEnd.getTime() + durationMs);
-
-  if (existingActive) {
-    await db.userSubscription.update({
-      where: { id: existingActive.id },
-      data: {
-        planId: premiumPlan.id,
-        status: SubscriptionStatus.ACTIVE,
-        endDate,
-      },
+  // 1. Idempotency Check: Jika orderId diberikan dan sudah pernah dicatat, kembalikan status aktif tanpa memperpanjang dobel
+  if (orderId) {
+    const existingTx = await db.paymentTransaction.findUnique({
+      where: { orderId },
     });
-  } else {
-    await db.userSubscription.create({
-      data: {
-        userId,
-        planId: premiumPlan.id,
-        status: SubscriptionStatus.ACTIVE,
-        startDate,
-        endDate,
-      },
-    });
+
+    if (existingTx) {
+      console.log(
+        `[Midtrans Fulfillment] Order ${orderId} sudah pernah diproses sebelumnya (Idempotent). Mengembalikan masa aktif saat ini.`
+      );
+      const activeSub = await db.userSubscription.findFirst({
+        where: {
+          userId,
+          status: SubscriptionStatus.ACTIVE,
+        },
+        orderBy: { endDate: "desc" },
+      });
+
+      return {
+        success: true,
+        planName: premiumPlan.name,
+        startDate: activeSub?.startDate || now,
+        endDate: activeSub?.endDate || now,
+      };
+    }
   }
 
-  return {
-    success: true,
-    planName: premiumPlan.name,
-    startDate,
-    endDate,
-  };
+  const durationMs = (premiumPlan.durationDays || 30) * 24 * 60 * 60 * 1000;
+
+  return await db.$transaction(async (tx) => {
+    // Jika orderId disediakan, rekam transaksi pembayaran untuk mencegah dobel fulfillment
+    if (orderId) {
+      await tx.paymentTransaction.create({
+        data: {
+          orderId,
+          userId,
+          planSlug: premiumPlan.slug,
+          amount: premiumPlan.price,
+          status: "settlement",
+        },
+      });
+    }
+
+    // Cek apakah pengguna saat ini sudah memiliki langganan aktif
+    const existingActive = await tx.userSubscription.findFirst({
+      where: {
+        userId,
+        status: SubscriptionStatus.ACTIVE,
+        endDate: { gte: now },
+      },
+      orderBy: { endDate: "desc" },
+    });
+
+    // Jika sudah ada langganan aktif, perpanjang dari tanggal berakhir sebelumnya
+    const startDate = existingActive ? existingActive.startDate : now;
+    const baseEnd = existingActive ? existingActive.endDate : now;
+    const endDate = new Date(baseEnd.getTime() + durationMs);
+
+    if (existingActive) {
+      await tx.userSubscription.update({
+        where: { id: existingActive.id },
+        data: {
+          planId: premiumPlan.id,
+          status: SubscriptionStatus.ACTIVE,
+          endDate,
+        },
+      });
+    } else {
+      await tx.userSubscription.create({
+        data: {
+          userId,
+          planId: premiumPlan.id,
+          status: SubscriptionStatus.ACTIVE,
+          startDate,
+          endDate,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      planName: premiumPlan.name,
+      startDate,
+      endDate,
+    };
+  });
 }

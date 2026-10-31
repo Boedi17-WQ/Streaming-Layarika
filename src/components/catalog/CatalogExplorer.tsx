@@ -26,6 +26,7 @@ export interface CatalogExplorerProps {
   initialTotalResults?: number;
   initialTotalPages?: number;
   initialType?: CatalogMediaType;
+  isLockedType?: boolean;
   initialGenreId?: number | null;
   initialSort?: string;
   initialPage?: number;
@@ -45,6 +46,7 @@ export function CatalogExplorer({
   initialTotalResults = 0,
   initialTotalPages = 1,
   initialType = "all",
+  isLockedType = false,
   initialGenreId = null,
   initialSort = "popularity.desc",
   initialPage = 1,
@@ -79,8 +81,8 @@ export function CatalogExplorer({
       if (typeof window === "undefined") return;
 
       const params = new URLSearchParams();
-      if (newType !== "all") params.set("type", newType);
-      if (newGenreId && newGenreId > 0) params.set("genre", String(newGenreId));
+      if (isLockedType || newType !== "all") params.set("type", newType);
+      if (newType === "all" && newGenreId && newGenreId > 0) params.set("genre", String(newGenreId));
       if (newSort && newSort !== "popularity.desc") params.set("sort", newSort);
       if (newPage > 1) params.set("page", String(newPage));
 
@@ -89,7 +91,7 @@ export function CatalogExplorer({
 
       window.history.replaceState(window.history.state, "", newUrl);
     },
-    []
+    [isLockedType]
   );
 
   const fetchCatalogData = useCallback(
@@ -114,7 +116,7 @@ export function CatalogExplorer({
 
       const params = new URLSearchParams();
       params.set("type", targetType);
-      if (targetGenreId && targetGenreId > 0) {
+      if (targetType === "all" && targetGenreId && targetGenreId > 0) {
         params.set("genre", String(targetGenreId));
       }
       params.set("sort", targetSort);
@@ -163,14 +165,8 @@ export function CatalogExplorer({
   const handleMediaTypeChange = (newType: CatalogMediaType) => {
     if (mediaType === newType) return;
 
-    let validGenreId = selectedGenreId;
-    if (validGenreId) {
-      const allowedGenres = newType === "tv" ? tvGenres : movieGenres;
-      const exists = allowedGenres.some((g) => g.id === validGenreId);
-      if (!exists) {
-        validGenreId = null;
-      }
-    }
+    // Filter genre hanya berlaku pada Katalog Umum (all), selalu dinonaktifkan (null) untuk movie & tv
+    const validGenreId = newType === "all" ? selectedGenreId : null;
 
     setMediaType(newType);
     setSelectedGenreId(validGenreId);
@@ -206,18 +202,19 @@ export function CatalogExplorer({
   };
 
   const handleResetAll = () => {
-    setMediaType("all");
+    const targetType = isLockedType ? initialType : "all";
+    setMediaType(targetType);
     setSelectedGenreId(null);
     setSortBy("popularity.desc");
     setCurrentPage(1);
 
-    fetchCatalogData("all", null, "popularity.desc", 1);
+    fetchCatalogData(targetType, null, "popularity.desc", 1);
   };
 
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
-      const urlType = (params.get("type") as CatalogMediaType) || "all";
+      const urlType = (params.get("type") as CatalogMediaType) || (isLockedType ? initialType : "all");
       const rawGenre = params.get("genre");
       const urlGenreId = rawGenre ? parseInt(rawGenre, 10) : null;
       const urlSort = params.get("sort") || "popularity.desc";
@@ -238,7 +235,7 @@ export function CatalogExplorer({
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchCatalogData]);
+  }, [fetchCatalogData, initialType, isLockedType]);
 
   const totalItemCount =
     mediaType === "movie"
@@ -248,131 +245,185 @@ export function CatalogExplorer({
       : movies.length + tvShows.length;
 
   const activeGenreName = currentGenres.find((g) => g.id === selectedGenreId)?.name;
+  const showGenreFilter = !isLockedType && mediaType === "all";
 
   return (
     <div className="space-y-8">
       {/* 1. Bar Filter: Kategori Media, Genre Dinamis & Pengurutan */}
       <div className="space-y-4 rounded-2xl border border-[#222222] bg-[#121212] p-4 sm:p-5 shadow-sm">
-        {/* A. Pemilihan Jenis Media (Semua, Film, Serial TV) & Sort Dropdown */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#222222] pb-4">
-          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#737373]">
-            <Tag size={16} className="text-[#D9A52E]" />
-            <span>Kategori Konten:</span>
-          </div>
+        {/* A. Bar Kategori Konten atau Header Koleksi Eksklusif & Sort Dropdown */}
+        <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${showGenreFilter ? "border-b border-[#222222] pb-4" : ""}`}>
+          {!isLockedType ? (
+            /* Tampilan Halaman Katalog Umum: Kategori Konten Switcher (Semua, Movies, Series) */
+            <>
+              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#737373]">
+                <Tag size={16} className="text-[#D9A52E]" />
+                <span>Kategori Konten:</span>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Tabs Media Type */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-[#292929] bg-[#0A0A0A] p-1 shadow-inner">
-              <button
-                type="button"
-                onClick={() => handleMediaTypeChange("all")}
-                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                  mediaType === "all"
-                    ? "bg-[#D9A52E] text-[#0A0A0A] shadow-md font-bold"
-                    : "text-[#A3A3A3] hover:text-[#F5F5F5]"
-                }`}
-              >
-                <Sparkle size={14} weight={mediaType === "all" ? "fill" : "regular"} />
-                <span>Semua</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Tabs Media Type */}
+                <div className="flex items-center gap-1.5 rounded-xl border border-[#292929] bg-[#0A0A0A] p-1 shadow-inner">
+                  <button
+                    type="button"
+                    onClick={() => handleMediaTypeChange("all")}
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+                      mediaType === "all"
+                        ? "bg-[#D9A52E] text-[#0A0A0A] shadow-md font-bold"
+                        : "text-[#A3A3A3] hover:text-[#F5F5F5]"
+                    }`}
+                  >
+                    <Sparkle size={14} weight={mediaType === "all" ? "fill" : "regular"} />
+                    <span>Semua</span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => handleMediaTypeChange("movie")}
-                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                  mediaType === "movie"
-                    ? "bg-[#D9A52E] text-[#0A0A0A] shadow-md font-bold"
-                    : "text-[#A3A3A3] hover:text-[#F5F5F5]"
-                }`}
-              >
-                <FilmReel size={14} weight={mediaType === "movie" ? "fill" : "regular"} />
-                <span>Film</span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMediaTypeChange("movie")}
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+                      mediaType === "movie"
+                        ? "bg-[#D9A52E] text-[#0A0A0A] shadow-md font-bold"
+                        : "text-[#A3A3A3] hover:text-[#F5F5F5]"
+                    }`}
+                  >
+                    <FilmReel size={14} weight={mediaType === "movie" ? "fill" : "regular"} />
+                    <span>Movies</span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => handleMediaTypeChange("tv")}
-                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                  mediaType === "tv"
-                    ? "bg-[#D9A52E] text-[#0A0A0A] shadow-md font-bold"
-                    : "text-[#A3A3A3] hover:text-[#F5F5F5]"
-                }`}
-              >
-                <Television size={14} weight={mediaType === "tv" ? "fill" : "regular"} />
-                <span>Serial TV</span>
-              </button>
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => handleMediaTypeChange("tv")}
+                    className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+                      mediaType === "tv"
+                        ? "bg-[#D9A52E] text-[#0A0A0A] shadow-md font-bold"
+                        : "text-[#A3A3A3] hover:text-[#F5F5F5]"
+                    }`}
+                  >
+                    <Television size={14} weight={mediaType === "tv" ? "fill" : "regular"} />
+                    <span>Series</span>
+                  </button>
+                </div>
 
-            {/* Selector Pengurutan */}
-            <div className="flex items-center gap-1.5 rounded-xl border border-[#292929] bg-[#0A0A0A] px-2.5 py-1 text-xs">
-              <SortAscending size={14} className="text-[#D9A52E]" />
-              <select
-                value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value)}
-                aria-label="Urutkan katalog"
-                className="bg-transparent text-xs text-[#F5F5F5] font-medium focus:outline-none cursor-pointer"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} className="bg-[#171717] text-[#F5F5F5]">
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+                {/* Selector Pengurutan */}
+                <div className="flex items-center gap-1.5 rounded-xl border border-[#292929] bg-[#0A0A0A] px-2.5 py-1 text-xs">
+                  <SortAscending size={14} className="text-[#D9A52E]" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    aria-label="Urutkan katalog"
+                    className="bg-transparent text-xs text-[#F5F5F5] font-medium focus:outline-none cursor-pointer"
+                  >
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-[#171717] text-[#F5F5F5]">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Tampilan Khusus Halaman Movies atau Series Eksklusif (Hanya Menampilkan Konten Terkait) */
+            <>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#D9A52E]/10 border border-[#D9A52E]/30 text-[#D9A52E]">
+                  {mediaType === "movie" ? (
+                    <FilmReel size={18} weight="fill" />
+                  ) : (
+                    <Television size={18} weight="fill" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#F5F5F5]">
+                      {mediaType === "movie" ? "Koleksi Film Bioskop" : "Koleksi Serial TV & Drama"}
+                    </span>
+                    <span className="rounded-full bg-[#D9A52E]/20 px-2 py-0.5 text-[10px] font-bold text-[#D9A52E]">
+                      Eksklusif {mediaType === "movie" ? "Movies" : "Series"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#737373]">
+                    {mediaType === "movie"
+                      ? "Menampilkan seluruh judul film layar lebar dan rilisan bioskop pilihan"
+                      : "Menampilkan seluruh judul serial televisi, k-drama, dan serial barat lengkap"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Selector Pengurutan */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto rounded-xl border border-[#292929] bg-[#0A0A0A] px-3 py-1.5 text-xs">
+                <SortAscending size={14} className="text-[#D9A52E]" />
+                <span className="text-[#737373] text-[11px] font-medium">Urutkan:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  aria-label="Urutkan katalog"
+                  className="bg-transparent text-xs text-[#F5F5F5] font-semibold focus:outline-none cursor-pointer"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value} className="bg-[#171717] text-[#F5F5F5]">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* B. Chip Genre Dinamis dari TMDB API */}
-        <div className="space-y-2 pt-1">
-          <div className="flex items-center justify-between text-xs text-[#737373]">
-            <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1">
-              <Funnel size={13} className="text-[#D9A52E]" />
-              <span>Filter Genre {mediaType === "tv" ? "Serial" : mediaType === "movie" ? "Film" : ""}:</span>
-            </span>
-            {selectedGenreId && (
+        {/* B. Chip Genre Dinamis dari TMDB API (Hanya ditampilkan di Katalog Umum saat mode Semua, disembunyikan di Halaman & Tab Movies & Series) */}
+        {showGenreFilter && (
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between text-xs text-[#737373]">
+              <span className="font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1">
+                <Funnel size={13} className="text-[#D9A52E]" />
+                <span>Filter Genre:</span>
+              </span>
+              {selectedGenreId && (
+                <button
+                  type="button"
+                  onClick={() => handleGenreSelect(null)}
+                  className="text-[#D9A52E] hover:underline transition font-medium"
+                >
+                  Hapus Filter Genre
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-thumb-[#292929]">
               <button
                 type="button"
                 onClick={() => handleGenreSelect(null)}
-                className="text-[#D9A52E] hover:underline transition font-medium"
+                className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-[#D9A52E] ${
+                  selectedGenreId === null
+                    ? "bg-[#D9A52E] text-[#0A0A0A] font-bold shadow-md shadow-[#D9A52E]/20"
+                    : "border border-[#292929] bg-[#171717] text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5]"
+                }`}
               >
-                Hapus Filter Genre
+                Semua Genre
               </button>
-            )}
-          </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-thumb-[#292929]">
-            <button
-              type="button"
-              onClick={() => handleGenreSelect(null)}
-              className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-[#D9A52E] ${
-                selectedGenreId === null
-                  ? "bg-[#D9A52E] text-[#0A0A0A] font-bold shadow-md shadow-[#D9A52E]/20"
-                  : "border border-[#292929] bg-[#171717] text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5]"
-              }`}
-            >
-              Semua Genre
-            </button>
-
-            {currentGenres.map((genre) => {
-              const isSelected = selectedGenreId === genre.id;
-              return (
-                <button
-                  key={`genre-${genre.id}`}
-                  type="button"
-                  onClick={() => handleGenreSelect(genre.id)}
-                  aria-pressed={isSelected}
-                  className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-[#D9A52E] ${
-                    isSelected
-                      ? "bg-[#D9A52E] text-[#0A0A0A] font-bold shadow-md shadow-[#D9A52E]/20"
-                      : "border border-[#292929] bg-[#171717] text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5]"
-                  }`}
-                >
-                  {genre.name}
-                </button>
-              );
-            })}
+              {currentGenres.map((genre) => {
+                const isSelected = selectedGenreId === genre.id;
+                return (
+                  <button
+                    key={`genre-${genre.id}`}
+                    type="button"
+                    onClick={() => handleGenreSelect(genre.id)}
+                    aria-pressed={isSelected}
+                    className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2 focus:ring-[#D9A52E] ${
+                      isSelected
+                        ? "bg-[#D9A52E] text-[#0A0A0A] font-bold shadow-md shadow-[#D9A52E]/20"
+                        : "border border-[#292929] bg-[#171717] text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5]"
+                    }`}
+                  >
+                    {genre.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 2. Bar Ringkasan Status & Reset */}
@@ -388,7 +439,7 @@ export function CatalogExplorer({
               <span>
                 Menampilkan <span className="font-bold text-[#D9A52E]">{totalResults}</span> judul
               </span>
-              {selectedGenreId && activeGenreName && (
+              {showGenreFilter && selectedGenreId && activeGenreName && (
                 <span className="text-[#737373]">
                   • Genre: <span className="text-[#D9A52E] font-semibold">{activeGenreName}</span>
                 </span>
@@ -397,7 +448,7 @@ export function CatalogExplorer({
           )}
         </div>
 
-        {(selectedGenreId || mediaType !== "all" || sortBy !== "popularity.desc") && (
+        {((showGenreFilter && selectedGenreId) || (!isLockedType && mediaType !== "all") || sortBy !== "popularity.desc") && (
           <button
             type="button"
             onClick={handleResetAll}

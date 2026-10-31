@@ -57,6 +57,7 @@ model User {
   watchlists          Watchlist[]
   watchHistory        WatchHistory[]
   subscriptions       UserSubscription[]
+  paymentTransactions PaymentTransaction[]
   playlists           Playlist[]
   episodeQuotaUsages  EpisodeQuotaUsage[]
   movieConsumptions   MovieWatchConsumption[]
@@ -226,6 +227,27 @@ model UserSubscription {
 
   @@index([userId, status])
   @@map("user_subscriptions")
+}
+
+// -----------------------------------------------------------------------------
+// Transaksi Pembayaran & Idempotensi (Midtrans Gateway)
+// -----------------------------------------------------------------------------
+
+model PaymentTransaction {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  userId      String
+  planSlug    String   @default("premium-monthly")
+  amount      Int      @default(49000)
+  status      String   @default("settlement")
+  paymentType String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payment_transactions")
 }
 
 // -----------------------------------------------------------------------------

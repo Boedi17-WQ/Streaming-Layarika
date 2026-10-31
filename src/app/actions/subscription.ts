@@ -211,7 +211,7 @@ export async function getPlaybackSourceAction(rawParams: {
 }): Promise<{
   allowed: boolean;
   streamUrl: string | null;
-  reason?: "UNAUTHENTICATED" | "EPISODE_LIMIT_REACHED" | "MOVIE_LIMIT_REACHED" | "VIP_UNLIMITED" | "WITHIN_FREE_QUOTA" | "WITHIN_FREE_LIMIT";
+  reason?: "UNAUTHENTICATED" | "EPISODE_LIMIT_REACHED" | "VIP_REQUIRED_FOR_EPISODE" | "MOVIE_LIMIT_REACHED" | "VIP_UNLIMITED" | "WITHIN_FREE_QUOTA" | "WITHIN_FREE_LIMIT";
   message?: string;
   isVip?: boolean;
   usedEpisodes?: number;

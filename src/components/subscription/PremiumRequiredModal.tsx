@@ -11,10 +11,12 @@ import {
   ShieldCheck,
   Clock,
   Sparkle,
+  LockKey,
 } from "@phosphor-icons/react";
 
 export type PremiumGateReason =
   | "EPISODE_LIMIT_REACHED"
+  | "VIP_REQUIRED_FOR_EPISODE"
   | "MOVIE_LIMIT_REACHED"
   | "EXPIRED"
   | "GENERIC";
@@ -61,15 +63,21 @@ export function PremiumRequiredModal({
   if (!isOpen) return null;
 
   const isMovieLimit = reason === "MOVIE_LIMIT_REACHED";
+  const isVipEpisodeLimit = reason === "VIP_REQUIRED_FOR_EPISODE";
 
-  // Judul & Deskripsi resmi sesuai Addendum Tahap 9 Bagian 4
+  // Judul & Deskripsi resmi sesuai aturan akses Free vs VIP
   const title = isMovieLimit
     ? "Batas 60 Menit Film Tercapai"
+    : isVipEpisodeLimit
+    ? "Episode Khusus VIP Member"
     : "Kuota 5 episode gratis hari ini telah habis.";
 
   const description = isMovieLimit
     ? (customMessage ||
       "Batas tontonan Free untuk film ini (60 menit pemutaran aktual) telah tercapai. Aktifkan Premium VIP untuk melanjutkan menonton hingga selesai tanpa jeda batas.")
+    : isVipEpisodeLimit
+    ? (customMessage ||
+      "Episode 6 dan seterusnya hanya dapat diakses oleh member VIP LayarRika. Aktifkan paket VIP untuk membuka seluruh episode tanpa batasan.")
     : (customMessage ||
       "Kamu sudah menggunakan seluruh kuota episode untuk paket Free. Aktifkan Premium VIP untuk membuka semua episode tanpa batas kuota Free.");
 
@@ -95,6 +103,8 @@ export function PremiumRequiredModal({
         <div className="w-16 h-16 rounded-2xl bg-[#D9A52E]/10 border border-[#D9A52E]/30 flex items-center justify-center mx-auto mb-3 shadow-inner shadow-[#D9A52E]/20 text-[#D9A52E]">
           {isMovieLimit ? (
             <FilmReel size={36} weight="duotone" />
+          ) : isVipEpisodeLimit ? (
+            <LockKey size={38} weight="duotone" />
           ) : (
             <Crown size={38} weight="duotone" />
           )}
@@ -102,8 +112,14 @@ export function PremiumRequiredModal({
 
         {/* Badge Jenis Batas */}
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D9A52E]/15 border border-[#D9A52E]/30 text-[#D9A52E] text-xs font-bold uppercase tracking-wider mb-2">
-          <Sparkle size={12} weight="fill" />
-          <span>{isMovieLimit ? "Batas Durasi Film Free" : "Batas Kuota Serial Free"}</span>
+          {isVipEpisodeLimit ? <Crown size={12} weight="fill" /> : <Sparkle size={12} weight="fill" />}
+          <span>
+            {isMovieLimit
+              ? "Batas Durasi Film Free"
+              : isVipEpisodeLimit
+              ? "Terkunci VIP Member"
+              : "Batas Kuota Serial Free"}
+          </span>
         </span>
 
         {/* Judul Utama Resmi */}
@@ -123,7 +139,7 @@ export function PremiumRequiredModal({
         <div className="grid grid-cols-2 gap-3 mb-6 text-left">
           <div className="rounded-xl border border-[#2b2b2b] bg-[#121212] p-3 space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-              {isMovieLimit ? "Durasi Terpakai" : "Episode Terpakai"}
+              {isMovieLimit ? "Durasi Terpakai" : isVipEpisodeLimit ? "Akses Episode" : "Episode Terpakai"}
             </span>
             <div className="text-sm font-bold text-[#F5F5F5] flex items-center gap-1.5">
               {isMovieLimit ? (
@@ -132,6 +148,11 @@ export function PremiumRequiredModal({
                   <span>
                     {Math.round(consumedSeconds / 60)} / {Math.round(movieLimitSeconds / 60)} Menit
                   </span>
+                </>
+              ) : isVipEpisodeLimit ? (
+                <>
+                  <LockKey size={14} weight="fill" className="text-[#D9A52E]" />
+                  <span className="text-[#D9A52E]">Episode 6+ Terkunci</span>
                 </>
               ) : (
                 <>
@@ -143,7 +164,11 @@ export function PremiumRequiredModal({
               )}
             </div>
             <p className="text-[10px] text-neutral-400">
-              {isMovieLimit ? "Sisa kuota: 0 detik" : `Sisa kuota: ${remainingEpisodes} episode`}
+              {isMovieLimit
+                ? "Sisa kuota: 0 detik"
+                : isVipEpisodeLimit
+                ? "Episode 1-5 Gratis • Episode 6+ VIP"
+                : `Sisa kuota: ${remainingEpisodes} episode`}
             </p>
           </div>
 

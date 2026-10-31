@@ -38,25 +38,25 @@ export interface VideoPlayerProps {
   onClose?: () => void;
 }
 
-// Fallback demo legal berlisensi Creative Commons (Blender Foundation)
+// Fallback demo legal berlisensi Creative Commons (Blender Foundation & Open Source)
 const LEGAL_DEMO_ASSETS = [
   {
-    title: "Tears of Steel (Blender Open Movie Project)",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    mimeType: "video/mp4",
-    sourceAttribution: "Blender Foundation (Creative Commons Attribution 3.0)",
-  },
-  {
     title: "Big Buck Bunny (Blender Open Movie)",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    videoUrl: "https://uploads.video-commander.com/sample/BigBuckBunny.mp4",
     mimeType: "video/mp4",
     sourceAttribution: "Blender Foundation (Creative Commons Attribution 3.0)",
   },
   {
-    title: "Sintel — The Durian Open Movie",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+    title: "Oceans (Open Video Sample)",
+    videoUrl: "https://vjs.zencdn.net/v/oceans.mp4",
     mimeType: "video/mp4",
-    sourceAttribution: "Blender Foundation (Creative Commons Attribution 3.0)",
+    sourceAttribution: "VideoJS CDN Sample (Creative Commons)",
+  },
+  {
+    title: "Big Buck Bunny (Mux HLS Stream)",
+    videoUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
+    mimeType: "application/x-mpegURL",
+    sourceAttribution: "Mux Public Test Streams (HLS)",
   },
 ];
 

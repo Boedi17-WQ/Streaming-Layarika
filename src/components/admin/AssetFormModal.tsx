@@ -42,28 +42,21 @@ interface AssetFormModalProps {
 // Preset sumber video legal terverifikasi untuk kemudahan demo / pengujian
 const PRESET_LEGAL_STREAMS = [
   {
-    name: "Tears of Steel (MP4 1080p)",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    mime: "video/mp4",
-    attr: "Blender Foundation (CC BY 3.0)",
-    duration: 734,
-  },
-  {
-    name: "Big Buck Bunny (MP4 1080p)",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    name: "Big Buck Bunny (MP4 720p)",
+    url: "https://uploads.video-commander.com/sample/BigBuckBunny.mp4",
     mime: "video/mp4",
     attr: "Blender Foundation (CC BY 3.0)",
     duration: 596,
   },
   {
-    name: "Sintel (MP4 1080p)",
-    url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+    name: "Oceans (MP4 720p)",
+    url: "https://vjs.zencdn.net/v/oceans.mp4",
     mime: "video/mp4",
-    attr: "Blender Foundation (CC BY 3.0)",
-    duration: 888,
+    attr: "VideoJS CDN Sample (CC BY)",
+    duration: 46,
   },
   {
-    name: "Akamai Multi-Bitrate (HLS .m3u8)",
+    name: "Mux Big Buck Bunny (HLS .m3u8)",
     url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
     mime: "application/x-mpegURL",
     attr: "Mux Open Test Stream (HLS)",

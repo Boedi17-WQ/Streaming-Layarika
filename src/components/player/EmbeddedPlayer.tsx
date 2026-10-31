@@ -5,12 +5,10 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   STREAMING_PROVIDERS,
-  ACTIVE_PLAYABLE_PROVIDERS,
   StreamingProviderId,
   getStreamUrl,
 } from "@/lib/streaming/providers";
 import {
-  ArrowClockwise,
   CheckCircle,
   FastForward,
   ShieldCheck,
@@ -18,9 +16,9 @@ import {
   FilmStrip,
   LockKey,
   Play,
-  Stop,
   Crown,
   Clock,
+  CornersIn,
 } from "@phosphor-icons/react";
 import { recordWatchProgressAction } from "@/app/actions/history";
 import {
@@ -29,7 +27,7 @@ import {
   getPlaybackSourceAction,
 } from "@/app/actions/subscription";
 import { LoginRequiredModal } from "@/components/auth/LoginRequiredModal";
-import { PremiumRequiredModal } from "@/components/subscription/PremiumRequiredModal";
+import { PremiumRequiredModal, PremiumGateReason } from "@/components/subscription/PremiumRequiredModal";
 
 export interface EmbeddedPlayerProps {
   tmdbId: number;
@@ -71,10 +69,41 @@ export function EmbeddedPlayer({
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [isMarkingCompleted, setIsMarkingCompleted] = useState<boolean>(false);
   const [serverStreamUrl, setServerStreamUrl] = useState<string | null>(null);
+  const [demoVideoError, setDemoVideoError] = useState<boolean>(false);
 
   // Referensi DOM untuk kontrol stop aman & pembebasan memori
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // State Layar Penuh (Fullscreen)
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (!document.fullscreenElement) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen().catch((err) => console.warn("Fullscreen request error:", err));
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch((err) => console.warn("Fullscreen exit error:", err));
+      }
+    }
+  };
 
   // State Modal Autentikasi Wajib Login (Addendum Tahap 9)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
@@ -82,7 +111,7 @@ export function EmbeddedPlayer({
   // State Modal Kuota Premium (Addendum Tahap 9)
   const [premiumModalState, setPremiumModalState] = useState<{
     isOpen: boolean;
-    reason: "EPISODE_LIMIT_REACHED" | "MOVIE_LIMIT_REACHED";
+    reason: PremiumGateReason;
     usedEpisodes?: number;
     episodeLimit?: number;
     remainingEpisodes?: number;
@@ -179,6 +208,7 @@ export function EmbeddedPlayer({
     }
 
     setServerStreamUrl(null);
+    setDemoVideoError(false);
     setIsPlaying(false);
     setIsLoading(false);
   }, []);
@@ -360,6 +390,15 @@ export function EmbeddedPlayer({
             reason: "MOVIE_LIMIT_REACHED",
             message: result.message,
           });
+        } else if (result.reason === "VIP_REQUIRED_FOR_EPISODE") {
+          setPremiumModalState({
+            isOpen: true,
+            reason: "VIP_REQUIRED_FOR_EPISODE",
+            usedEpisodes: result.usedEpisodes,
+            episodeLimit: result.episodeLimit || 5,
+            remainingEpisodes: result.remainingEpisodes || 0,
+            message: result.message,
+          });
         } else {
           setPremiumModalState({
             isOpen: true,
@@ -389,6 +428,7 @@ export function EmbeddedPlayer({
       stopAllPlayback();
       setActiveProvider(providerId);
       setIsCompleted(false);
+      setDemoVideoError(false);
       // Jika pengguna sebelumnya sudah memutar, verifikasi kembali izin sebelum melanjutkan ke provider baru
       if (isPlaying) {
         handleStartPlay();
@@ -397,6 +437,7 @@ export function EmbeddedPlayer({
   };
 
   const handleRefresh = () => {
+    setDemoVideoError(false);
     setRefreshKey((prev) => prev + 1);
     handleStartPlay();
   };
@@ -433,136 +474,172 @@ export function EmbeddedPlayer({
       : null;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-[#292929] bg-[#121212] p-4 sm:p-6 shadow-2xl">
-      {/* 1. Header Bar: Server Switcher & Action Buttons */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#222222] pb-4">
-        {/* Tab Pemilihan Sumber */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-[#737373] mr-1">
-            Sumber:
-          </span>
-          {ACTIVE_PLAYABLE_PROVIDERS.map((p) => {
-            const isActive = activeProvider === p.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleSelectProvider(p.id)}
-                className={`group flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition shadow-sm ${
-                  isActive
-                    ? "bg-[#D9A52E] text-[#0A0A0A] shadow-[#D9A52E]/20"
-                    : "border border-[#292929] bg-[#171717] text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5]"
-                }`}
-              >
-                {/* Indikator Status Sumber */}
-                <span className="relative flex h-2 w-2">
-                  {p.isPlayable && (
-                    <span
-                      className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                        isActive ? "bg-[#0A0A0A] animate-ping" : "bg-emerald-400"
-                      }`}
-                    />
-                  )}
-                  <span
-                    className={`relative inline-flex rounded-full h-2 w-2 ${
-                      isActive
-                        ? "bg-[#0A0A0A]"
-                        : p.isPlayable
-                        ? "bg-emerald-500"
-                        : "bg-amber-500"
-                    }`}
-                  />
-                </span>
-                <span>{p.name}</span>
-                <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded font-semibold ${
-                    isActive ? "bg-black/20 text-[#0A0A0A]" : "bg-[#292929] text-[#737373]"
-                  }`}
-                >
-                  {p.badge}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Indikator Kuota Film (Free vs VIP) */}
-        {mediaType === "MOVIE" && movieEntitlement && (
-          <div className="flex items-center gap-2">
-            {movieEntitlement.isVip ? (
-              <div className="flex items-center gap-1.5 rounded-xl border border-[#D9A52E]/40 bg-[#D9A52E]/10 px-3 py-1.5 text-xs font-bold text-[#D9A52E] shadow-sm">
-                <Crown size={14} weight="fill" />
-                <span>VIP Bebas Kuota 60 Menit</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 rounded-xl border border-[#292929] bg-[#171717] px-3 py-1.5 text-xs text-[#A3A3A3]">
-                <Clock size={14} className="text-[#D9A52E]" />
-                <span>
-                  {movieEntitlement.remainingSeconds !== null
-                    ? `Sisa Kuota: ${Math.max(0, Math.ceil(movieEntitlement.remainingSeconds / 60))} menit`
-                    : "Kuota Free: 60 Menit / Film"}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tombol Aksi Kanan (Stop, Reload, Tandai Selesai, Next Episode) */}
-        <div className="flex items-center gap-2">
-          {/* Tombol Hentikan Pemutaran Eksplisit */}
-          {isPlaying && (
+    <div className="space-y-4 rounded-3xl border border-white/10 bg-gradient-to-b from-[#141414] to-[#0c0c0c] p-4 sm:p-6 shadow-2xl backdrop-blur-xl">
+      {/* 1. Header Bar: Sleek Floating Glass Capsule Dock & Status Akses (Mobile Responsive) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+        {/* Floating Glass Capsule Dock Pemilihan Server (Scrollable di HP kecil) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none max-w-full">
+          <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-[#121212]/90 p-1 shadow-inner shadow-black/80 backdrop-blur-md shrink-0">
+            {/* 1. Trailer Resmi */}
             <button
               type="button"
-              onClick={stopAllPlayback}
-              title="Hentikan Pemutaran Video"
-              className="flex items-center gap-1.5 rounded-lg border border-red-500/40 bg-red-950/30 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-900/50"
+              onClick={() => handleSelectProvider("trailer")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                activeProvider === "trailer"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
+              }`}
             >
-              <Stop size={14} weight="fill" />
-              <span>Hentikan</span>
+              <FilmStrip size={14} weight={activeProvider === "trailer" ? "fill" : "regular"} />
+              <span>Trailer</span>
             </button>
+
+            {/* 2. Server 1 (MultiEmbed) */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider("multiembed")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                activeProvider === "multiembed"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                {activeProvider === "multiembed" && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#0A0A0A] opacity-75 animate-ping" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    activeProvider === "multiembed" ? "bg-[#0A0A0A]" : "bg-emerald-400"
+                  }`}
+                />
+              </span>
+              <span>Server 1</span>
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                  activeProvider === "multiembed" ? "bg-black/20 text-[#0A0A0A]" : "bg-white/10 text-[#737373]"
+                }`}
+              >
+                HD
+              </span>
+            </button>
+
+            {/* 3. Server 2 (VidSrc) */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider("vidsrc")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                activeProvider === "vidsrc"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                {activeProvider === "vidsrc" && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#0A0A0A] opacity-75 animate-ping" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    activeProvider === "vidsrc" ? "bg-[#0A0A0A]" : "bg-emerald-400"
+                  }`}
+                />
+              </span>
+              <span>Server 2</span>
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                  activeProvider === "vidsrc" ? "bg-black/20 text-[#0A0A0A]" : "bg-white/10 text-[#737373]"
+                }`}
+              >
+                Multi
+              </span>
+            </button>
+
+            {/* 4. Demo HLS (Cadangan / Developer Open Source) */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider("demo")}
+              title="Media Uji Demo Terbuka (Blender Foundation)"
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all ${
+                activeProvider === "demo"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#737373] hover:text-[#A3A3A3] hover:bg-white/5"
+              }`}
+            >
+              <span>Demo</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Status Akses & Tombol Aksi Kanan Rapi */}
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
+          {/* Indikator Kuota Film (Free vs VIP) — Tampilan Horizontal Bersih */}
+          {mediaType === "MOVIE" && movieEntitlement && (
+            movieEntitlement.isVip ? (
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-3 py-1.5 text-xs font-bold text-[#D9A52E] shadow-sm whitespace-nowrap">
+                <Crown size={14} weight="fill" />
+                <span>VIP Bebas Kuota</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-[#A3A3A3] whitespace-nowrap">
+                <Clock size={13} className="text-[#D9A52E]" />
+                <span>
+                  {movieEntitlement.remainingSeconds !== null
+                    ? `Sisa ${Math.max(0, Math.ceil(movieEntitlement.remainingSeconds / 60))}m`
+                    : "Kuota 60m"}
+                </span>
+              </div>
+            )
           )}
-
-          {/* Tombol Muat Ulang */}
-          <button
-            type="button"
-            onClick={handleRefresh}
-            title="Muat Ulang Pemutar"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#292929] bg-[#1c1c1c] text-[#A3A3A3] transition hover:border-[#D9A52E] hover:text-[#F5F5F5]"
-          >
-            <ArrowClockwise size={16} />
-          </button>
-
-          {/* Tombol Tandai Selesai */}
-          <button
-            type="button"
-            onClick={handleMarkCompleted}
-            disabled={isCompleted || isMarkingCompleted}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-              isCompleted
-                ? "border-emerald-600 bg-emerald-500/10 text-emerald-400 cursor-default"
-                : "border-[#292929] bg-[#1c1c1c] text-[#A3A3A3] hover:border-emerald-500 hover:text-emerald-400"
-            }`}
-          >
-            <CheckCircle size={14} weight={isCompleted ? "fill" : "regular"} />
-            <span>{isCompleted ? "Telah Selesai" : "Tandai Selesai"}</span>
-          </button>
 
           {/* Tombol Episode Selanjutnya (Khusus Serial TV) */}
           {mediaType === "TV" && hasNextEpisode && onNextEpisode && (
             <button
               type="button"
               onClick={onNextEpisode}
-              className="flex items-center gap-1.5 rounded-lg border border-[#D9A52E] bg-[#D9A52E]/15 px-3 py-1.5 text-xs font-bold text-[#D9A52E] transition hover:bg-[#D9A52E] hover:text-[#0A0A0A]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E] bg-gradient-to-r from-[#D9A52E] to-[#e5b342] px-3.5 py-1.5 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/20 transition-all hover:scale-105 active:scale-95"
             >
               <span>Eps Selanjutnya</span>
-              <FastForward size={14} weight="fill" />
+              <FastForward size={13} weight="fill" />
             </button>
           )}
+
+          {/* Tombol Tandai Selesai (Kapsul Modern Elegan) */}
+          <button
+            type="button"
+            onClick={handleMarkCompleted}
+            disabled={isCompleted || isMarkingCompleted}
+            title={isCompleted ? "Telah ditandai selesai ditonton" : "Tandai judul ini telah selesai ditonton"}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+              isCompleted
+                ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 cursor-default"
+                : "border border-white/10 bg-white/5 text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5]"
+            }`}
+          >
+            <CheckCircle size={14} weight={isCompleted ? "fill" : "regular"} className={isCompleted ? "text-emerald-400" : "text-[#737373]"} />
+            <span className="hidden sm:inline">{isCompleted ? "Selesai" : "Tandai Selesai"}</span>
+          </button>
         </div>
       </div>
 
       {/* 2. Container Video Player */}
-      <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-[#292929] bg-[#000000] shadow-2xl">
+      <div
+        ref={containerRef}
+        className={`relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-[#000000] shadow-2xl transition-all ${
+          isFullscreen ? "fixed inset-0 z-50 !aspect-auto !h-screen !w-screen !rounded-none !border-0" : ""
+        }`}
+      >
+        {/* Tombol Melayang Keluar Fullscreen jika sedang dalam mode Layar Penuh */}
+        {isFullscreen && (
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            title="Keluar Layar Penuh (Esc)"
+            className="absolute top-4 right-4 z-30 flex items-center gap-1.5 rounded-xl border border-white/20 bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-black/90 hover:scale-105"
+          >
+            <CornersIn size={16} weight="bold" />
+            <span>Keluar Layar Penuh</span>
+          </button>
+        )}
         {/* Loading Spinner saat memuat */}
         {isLoading && (
           <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0A0A0A]/90 backdrop-blur-xs text-[#F5F5F5] transition-opacity duration-300">
@@ -593,34 +670,53 @@ export function EmbeddedPlayer({
               </div>
             )}
 
-            <div className="relative z-10 flex flex-col items-center max-w-md space-y-4">
-              <button
-                type="button"
-                onClick={handleStartPlay}
-                aria-label={`Mulai putar ${currentProvider.name}`}
-                className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-2xl shadow-[#D9A52E]/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#D9A52E]/40"
-              >
-                <span className="absolute -inset-2 rounded-full border-2 border-[#D9A52E]/40 animate-ping opacity-60 pointer-events-none" />
-                <Play size={36} weight="fill" className="ml-1 text-[#0A0A0A]" />
-              </button>
+            {(() => {
+              const isTvEpisodeVipLocked = mediaType === "TV" && (episodeNumber || 1) >= 6 && !isVipInitial;
+              return (
+                <div className="relative z-10 flex flex-col items-center max-w-md space-y-4">
+                  {isTvEpisodeVipLocked ? (
+                    <button
+                      type="button"
+                      onClick={handleStartPlay}
+                      aria-label="Episode terkunci khusus VIP"
+                      className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-[#D9A52E] via-[#F3C254] to-[#FFF0B3] shadow-2xl shadow-[#D9A52E]/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#D9A52E]/40 cursor-pointer"
+                    >
+                      <LockKey size={36} weight="fill" className="text-[#0A0A0A]" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleStartPlay}
+                      aria-label={`Mulai putar ${currentProvider.name}`}
+                      className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-2xl shadow-[#D9A52E]/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#D9A52E]/40"
+                    >
+                      <span className="absolute -inset-2 rounded-full border-2 border-[#D9A52E]/40 animate-ping opacity-60 pointer-events-none" />
+                      <Play size={36} weight="fill" className="ml-1 text-[#0A0A0A]" />
+                    </button>
+                  )}
 
-              <div className="space-y-1">
-                <span className="rounded-full border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-3 py-1 text-[11px] font-bold text-[#D9A52E] uppercase tracking-wider">
-                  {currentProvider.name}
-                </span>
-                <h4 className="text-base sm:text-lg font-bold text-[#F5F5F5] line-clamp-1 pt-1">
-                  {title}
-                </h4>
-                {mediaType === "TV" && (
-                  <p className="text-xs text-[#A3A3A3]">
-                    Musim {seasonNumber} • Episode {episodeNumber} {episodeTitle ? `— ${episodeTitle}` : ""}
-                  </p>
-                )}
-                <p className="text-[11px] text-[#737373]">
-                  Klik tombol putar untuk memulai video. Audio tidak diputar di latar belakang.
-                </p>
-              </div>
-            </div>
+                  <div className="space-y-1">
+                    <span className="rounded-full border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-3 py-1 text-[11px] font-bold text-[#D9A52E] uppercase tracking-wider inline-flex items-center gap-1">
+                      {isTvEpisodeVipLocked && <Crown size={12} weight="fill" />}
+                      <span>{isTvEpisodeVipLocked ? "Khusus VIP Member" : currentProvider.name}</span>
+                    </span>
+                    <h4 className="text-base sm:text-lg font-bold text-[#F5F5F5] line-clamp-1 pt-1">
+                      {title}
+                    </h4>
+                    {mediaType === "TV" && (
+                      <p className="text-xs text-[#A3A3A3]">
+                        Musim {seasonNumber} • Episode {episodeNumber} {episodeTitle ? `— ${episodeTitle}` : ""}
+                      </p>
+                    )}
+                    <p className="text-[11px] text-[#737373]">
+                      {isTvEpisodeVipLocked
+                        ? "Episode 6 dan seterusnya terkunci khusus member VIP. Beli paket VIP untuk menonton."
+                        : "Klik tombol putar untuk memulai video. Audio tidak diputar di latar belakang."}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -636,10 +732,10 @@ export function EmbeddedPlayer({
                 key={`trailer-${streamUrl}-${refreshKey}`}
                 src={streamUrl}
                 title={`Trailer Resmi ${title}`}
-                allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 referrerPolicy="strict-origin-when-cross-origin"
-                sandbox="allow-scripts allow-same-origin allow-presentation"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-fullscreen"
+                allowFullScreen
                 onLoad={() => setIsLoading(false)}
                 className="h-full w-full border-0"
               />
@@ -652,8 +748,9 @@ export function EmbeddedPlayer({
                 key={`stream-${activeProvider}-${seasonNumber}-${episodeNumber}-${refreshKey}`}
                 src={streamUrl}
                 title={`Pemutar Streaming ${title}`}
+                allow="autoplay *; encrypted-media *; gyroscope *; picture-in-picture *; fullscreen *"
                 allowFullScreen
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                referrerPolicy="origin"
                 onLoad={() => setIsLoading(false)}
                 className="h-full w-full border-0"
               />
@@ -670,23 +767,56 @@ export function EmbeddedPlayer({
               </div>
             )}
 
-            {/* Kondisi 4: Demo Pemutar HLS / MP4 (Creative Commons - Sintel) */}
+            {/* Kondisi 4: Demo Pemutar Video Terbuka (Creative Commons - Big Buck Bunny & Mirror) */}
             {activeProvider === "demo" && (
               <div className="relative h-full w-full bg-[#050505]">
-                <video
-                  ref={videoRef}
-                  key={`demo-video-${refreshKey}`}
-                  controls
-                  autoPlay
-                  playsInline
-                  poster={posterPath ? `https://image.tmdb.org/t/p/w1280${posterPath}` : undefined}
-                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
-                  className="h-full w-full object-contain"
-                  onLoadedData={() => setIsLoading(false)}
-                >
-                  <track kind="captions" />
-                  Browser Anda tidak mendukung tag video HTML5.
-                </video>
+                {demoVideoError ? (
+                  <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center text-[#A3A3A3] bg-[#0d0d0d]">
+                    <FilmStrip size={44} className="text-[#D9A52E]/60 mb-2.5" />
+                    <p className="text-sm font-bold text-[#F5F5F5] mb-1">
+                      Gagal Memuat Sumber Video Demo
+                    </p>
+                    <p className="text-xs text-[#737373] max-w-sm mb-4">
+                      Koneksi ke media uji terbuka terputus atau dibatasi oleh browser. Anda dapat memuat ulang atau beralih ke Server 1 / Server 2.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDemoVideoError(false);
+                        handleRefresh();
+                      }}
+                      className="rounded-xl bg-[#D9A52E] px-4 py-2 text-xs font-bold text-[#0A0A0A] shadow-lg shadow-[#D9A52E]/20 transition hover:bg-[#c49226]"
+                    >
+                      Coba Muat Ulang
+                    </button>
+                  </div>
+                ) : (
+                  <video
+                    ref={videoRef}
+                    key={`demo-video-${refreshKey}`}
+                    controls
+                    autoPlay
+                    playsInline
+                    poster={previewCoverUrl || undefined}
+                    src={serverStreamUrl || streamUrl || "https://uploads.video-commander.com/sample/BigBuckBunny.mp4"}
+                    className="h-full w-full object-contain"
+                    onLoadedData={() => setIsLoading(false)}
+                    onError={() => {
+                      setIsLoading(false);
+                      // Fallback ke CDN cadangan jika CDN pertama terblokir jaringan pengguna
+                      if (videoRef.current && !videoRef.current.src.includes("oceans.mp4")) {
+                        videoRef.current.src = "https://vjs.zencdn.net/v/oceans.mp4";
+                        videoRef.current.load();
+                        videoRef.current.play().catch(() => {});
+                      } else {
+                        setDemoVideoError(true);
+                      }
+                    }}
+                  >
+                    <track kind="captions" />
+                    Browser Anda tidak mendukung tag video HTML5.
+                  </video>
+                )}
               </div>
             )}
           </>

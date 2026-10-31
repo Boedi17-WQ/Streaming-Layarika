@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ArrowClockwise,
   Check,
+  Printer,
 } from "@phosphor-icons/react";
 import {
   createMidtransBankVaAction,
@@ -25,8 +26,10 @@ export interface MidtransModalProps {
   grossAmount: number;
   planName: string;
   redirectUrl?: string;
+  userName?: string | null;
+  userEmail?: string | null;
   onClose: () => void;
-  onPaySuccess: (orderId: string) => Promise<void>;
+  onPaySuccess: (orderId: string, options?: { isSimulated?: boolean }) => Promise<void>;
 }
 
 export function MidtransModal({
@@ -35,6 +38,8 @@ export function MidtransModal({
   grossAmount,
   planName,
   redirectUrl,
+  userName = null,
+  userEmail = null,
   onClose,
   onPaySuccess,
 }: MidtransModalProps) {
@@ -56,11 +61,11 @@ export function MidtransModal({
 
   // Callback saat pembayaran sukses (Settlement)
   const handlePaymentCompleted = useCallback(
-    async (finalOrderId: string) => {
+    async (finalOrderId: string, options?: { isSimulated?: boolean }) => {
       setStep("success");
       setIsProcessing(false);
       try {
-        await onPaySuccess(finalOrderId);
+        await onPaySuccess(finalOrderId, options);
       } catch (err) {
         console.warn("Gagal konfirmasi status pembayaran:", err);
       }
@@ -166,7 +171,7 @@ export function MidtransModal({
   const handleSimulatePayment = async () => {
     setIsProcessing(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
-    await handlePaymentCompleted(activeOrderId);
+    await handlePaymentCompleted(activeOrderId, { isSimulated: true });
   };
 
   return (
@@ -622,40 +627,118 @@ export function MidtransModal({
           </div>
         )}
 
-        {/* STEP 3: SUKSES */}
+        {/* STEP 3: SUKSES DENGAN INVOICE / BUKTI PEMBAYARAN RESMI */}
         {step === "success" && (
-          <div className="text-center py-6 space-y-4 animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-inner shadow-emerald-500/30">
-              <CheckCircle size={36} weight="fill" />
-            </div>
-
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-white">Pembayaran Berhasil!</h3>
-              <p className="text-xs text-neutral-300 max-w-xs mx-auto leading-relaxed">
-                Transaksi Midtrans Sandbox telah terkonfirmasi lunas (Settlement). Paket{" "}
-                <span className="text-[#D9A52E] font-bold">{planName}</span> kini aktif.
+          <div className="space-y-4 animate-in zoom-in-95 duration-200">
+            {/* Header Success */}
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-inner shadow-emerald-500/30">
+                <CheckCircle size={32} weight="fill" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Pembayaran Berhasil & Lunas!</h3>
+              <p className="text-xs text-neutral-300 max-w-sm mx-auto leading-relaxed">
+                Transaksi terkonfirmasi settlement. Paket{" "}
+                <span className="text-[#D9A52E] font-bold">{planName}</span> kini aktif pada akun Anda.
               </p>
             </div>
 
-            <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-400 space-y-1 max-w-sm mx-auto">
-              <div className="flex justify-between">
-                <span>Order ID:</span>
-                <span className="font-mono text-white">{activeOrderId}</span>
+            {/* Faktur / Invoice Card */}
+            <div className="rounded-2xl border border-neutral-700/80 bg-neutral-900/90 p-4 sm:p-5 space-y-3.5 text-xs text-neutral-300">
+              <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+                <div className="flex items-center gap-2">
+                  <Receipt size={18} className="text-[#D9A52E]" weight="fill" />
+                  <span className="font-bold text-white uppercase tracking-wider text-[11px]">
+                    Faktur Pembayaran Digital
+                  </span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase tracking-wider">
+                  Lunas / Settled
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span>Status Transaksi:</span>
-                <span className="text-emerald-400 font-bold uppercase">Settlement</span>
+
+              {/* Detail Transaksi Grid */}
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <span className="text-neutral-500 block">No. Faktur:</span>
+                  <span className="font-mono text-neutral-200 font-semibold">
+                    INV-LR-{activeOrderId.slice(-8).toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-neutral-500 block">Waktu Transaksi:</span>
+                  <span className="text-neutral-200">
+                    {new Date().toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-neutral-500 block">Order ID:</span>
+                  <span
+                    className="font-mono text-neutral-300 truncate block max-w-[170px]"
+                    title={activeOrderId}
+                  >
+                    {activeOrderId}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-neutral-500 block">Metode:</span>
+                  <span className="text-neutral-200 capitalize">
+                    {selectedChannel.replace(/_/g, " ")}
+                  </span>
+                </div>
+                {userName && (
+                  <div className="col-span-2 pt-1 border-t border-neutral-800/60 flex justify-between text-[11px]">
+                    <span className="text-neutral-500">Pelanggan:</span>
+                    <span className="text-neutral-200 font-semibold">
+                      {userName} ({userEmail || "-"})
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Item Pembelian */}
+              <div className="pt-2 border-t border-neutral-800 space-y-1.5 text-xs">
+                <div className="flex justify-between items-center text-neutral-200 font-medium">
+                  <span>{planName} (30 Hari)</span>
+                  <span className="font-mono">Rp {grossAmount.toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between items-center text-neutral-500 text-[11px]">
+                  <span>PPN / Biaya Layanan:</span>
+                  <span className="font-mono">Rp 0 (Bebas Biaya)</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-neutral-800 text-sm font-bold text-white">
+                  <span>Total Dibayar:</span>
+                  <span className="text-[#D9A52E] font-mono">
+                    Rp {grossAmount.toLocaleString("id-ID")}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#D9A52E] hover:bg-[#c49226] py-3 text-xs font-bold text-neutral-950 transition cursor-pointer shadow-lg shadow-[#D9A52E]/20"
-            >
-              <span>Mulai Nonton dengan Akses VIP</span>
-              <ArrowRight size={16} />
-            </button>
+            {/* Tombol Aksi */}
+            <div className="space-y-2 pt-1">
+              <a
+                href={`/invoice/${encodeURIComponent(activeOrderId)}?print=true`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#D9A52E]/40 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 py-2.5 text-xs font-bold text-[#D9A52E] transition shadow-sm"
+              >
+                <Printer size={16} weight="bold" />
+                <span>Buka Lembar Faktur & Cetak PDF</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#D9A52E] hover:bg-[#c49226] py-3 text-xs font-bold text-neutral-950 transition cursor-pointer shadow-lg shadow-[#D9A52E]/20"
+              >
+                <span>Mulai Nonton dengan Akses VIP</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
         )}
 

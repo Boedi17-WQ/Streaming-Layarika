@@ -13,7 +13,7 @@ import {
 } from "@/lib/tmdb/client";
 import { mapTmdbMovieToMovie, mapTmdbTvToMovie } from "@/lib/tmdb/mappers";
 import { MOCK_FEATURED_MOVIES, MOCK_SERIES } from "@/data/mockMovies";
-import { FilmReel } from "@phosphor-icons/react/dist/ssr";
+import { FilmReel, Television, Sparkle } from "@phosphor-icons/react/dist/ssr";
 
 interface CatalogPageProps {
   searchParams: Promise<{
@@ -81,8 +81,9 @@ async function CatalogDataLoader({ searchParams }: CatalogPageProps) {
   const initialType: CatalogMediaType =
     rawType === "movie" ? "movie" : rawType === "tv" ? "tv" : "all";
 
+  // Fitur filter genre TMDB hanya aktif pada mode Katalog Umum (all), tidak digunakan pada page Series & Movies
   let initialGenreId: number | null = null;
-  if (resolvedParams.genre) {
+  if (initialType === "all" && resolvedParams.genre) {
     const parsed = parseInt(resolvedParams.genre, 10);
     if (!isNaN(parsed) && parsed > 0) {
       initialGenreId = parsed;
@@ -138,15 +139,28 @@ async function CatalogDataLoader({ searchParams }: CatalogPageProps) {
     } catch (err) {
       console.error("[CatalogPage Server Fetch Error]", err);
     }
+  } else {
+    // Mode offline / mock data fallback: pisahkan movie vs tv show
+    if (initialType === "movie") {
+      initialTvShows = [];
+      initialTotalResults = initialMovies.length;
+    } else if (initialType === "tv") {
+      initialMovies = [];
+      initialTotalResults = initialTvShows.length;
+    }
   }
+
+  const isLockedType = initialType === "movie" || initialType === "tv";
 
   return (
     <CatalogExplorer
+      key={`catalog-${initialType}-${initialGenreId ?? "all"}-${initialSort}-${initialPage}`}
       initialMovies={initialMovies}
       initialTvShows={initialTvShows}
       initialTotalResults={initialTotalResults}
       initialTotalPages={initialTotalPages}
       initialType={initialType}
+      isLockedType={isLockedType}
       initialGenreId={initialGenreId}
       initialSort={initialSort}
       initialPage={initialPage}
@@ -156,31 +170,81 @@ async function CatalogDataLoader({ searchParams }: CatalogPageProps) {
   );
 }
 
+export const instant = false;
+
+async function CatalogHeader({ searchParams }: CatalogPageProps) {
+  const resolvedParams = await searchParams;
+  const isMovie = resolvedParams.type === "movie";
+  const isTv = resolvedParams.type === "tv";
+
+  const badgeIcon = isMovie ? (
+    <FilmReel size={13} weight="fill" />
+  ) : isTv ? (
+    <Television size={13} weight="fill" />
+  ) : (
+    <Sparkle size={13} weight="fill" />
+  );
+
+  const badgeText = isMovie
+    ? "Galeri Movies & Bioskop Pilihan"
+    : isTv
+    ? "Koleksi TV Series & Serial Drama Lengkap"
+    : "Eksplorasi Seluruh Katalog Sinema";
+
+  const titleText = isMovie
+    ? "Koleksi Movies Pilihan"
+    : isTv
+    ? "Serial TV & Drama Series"
+    : "Katalog Lengkap Sinema & Serial";
+
+  const descText = isMovie
+    ? "Jelajahi ribuan judul film bioskop layar lebar terpopuler, film pemenang penghargaan, dan rilisan terbaru dunia sinema."
+    : isTv
+    ? "Streaming koleksi serial televisi terbaik, season lengkap, dan episode terbaru dari seluruh dunia tanpa jeda."
+    : "Jelajahi seluruh film bioskop dan serial televisi, saring berdasarkan genre resmi, serta urutkan sesuai popularitas dan rating tertinggi.";
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-3 text-center">
+      <div className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-3.5 py-1 text-xs font-semibold text-[#D9A52E]">
+        {badgeIcon}
+        <span>{badgeText}</span>
+      </div>
+
+      <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F5F5F5]">
+        {titleText}
+      </h1>
+
+      <p className="text-xs sm:text-sm text-[#A3A3A3] max-w-lg mx-auto leading-relaxed">
+        {descText}
+      </p>
+    </div>
+  );
+}
+
 export default function CatalogPage({ searchParams }: CatalogPageProps) {
   return (
     <div className="min-h-screen bg-[#0A0A0A] py-10 sm:py-14 pb-24 text-[#F5F5F5]">
       <Container className="space-y-10">
-        {/* Header Eksplorasi Katalog */}
-        <div className="max-w-2xl mx-auto space-y-3 text-center">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-3 py-1 text-xs font-semibold text-[#D9A52E]">
-            <FilmReel size={13} weight="fill" />
-            <span>Eksplorasi Katalog Sinema</span>
-          </div>
-
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[#F5F5F5]">
-            Katalog Film & Serial TV
-          </h1>
-
-          <p className="text-xs sm:text-sm text-[#A3A3A3] max-w-lg mx-auto leading-relaxed">
-            Jelajahi seluruh film bioskop dan serial televisi, saring berdasarkan genre resmi, serta urutkan sesuai popularitas dan rating tertinggi.
-          </p>
-        </div>
+        {/* Header Eksplorasi Katalog Dinamis (Isolasi Suspense) */}
+        <Suspense fallback={<CatalogHeaderSkeleton />}>
+          <CatalogHeader searchParams={searchParams} />
+        </Suspense>
 
         {/* Data Loader yang terisolasi dalam Suspense boundary */}
         <Suspense fallback={<CatalogExplorerSkeleton />}>
           <CatalogDataLoader searchParams={searchParams} />
         </Suspense>
       </Container>
+    </div>
+  );
+}
+
+function CatalogHeaderSkeleton() {
+  return (
+    <div className="max-w-2xl mx-auto space-y-3 text-center animate-pulse">
+      <div className="h-6 w-48 rounded-full bg-[#171717] mx-auto" />
+      <div className="h-10 w-72 rounded-xl bg-[#171717] mx-auto" />
+      <div className="h-4 w-96 rounded bg-[#141414] mx-auto" />
     </div>
   );
 }

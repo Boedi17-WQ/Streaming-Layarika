@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       console.log(
         `[Midtrans Webhook] Pembayaran sukses untuk order ${payload.order_id}. Mengaktifkan paket VIP untuk user: ${userId}`
       );
-      await fulfillVipSubscription(userId);
+      await fulfillVipSubscription(userId, payload.order_id);
     }
 
     return NextResponse.json({

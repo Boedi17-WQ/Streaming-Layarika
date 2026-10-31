@@ -58,7 +58,11 @@ export const ALLOWED_STREAM_HOSTS = [
   "test-streams.mux.dev",
   "bitdash-a.akamaihd.net",
   "multiembed.mov",
+  "streamingnow.mov",
   "vsembed.su",
+  "uploads.video-commander.com",
+  "vjs.zencdn.net",
+  "interactive-examples.mdn.mozilla.net",
 ];
 
 // Regex untuk mendeteksi IP privat / loopback (Pencegahan SSRF)
@@ -162,9 +166,9 @@ export const STREAMING_PROVIDERS: Record<StreamingProviderId, StreamingProvider>
     badge: "Open Source",
     verificationStatus: "DEMO_OPEN_SOURCE",
     isPlayable: true,
-    complianceNotice: "Media film pendek karya Blender Foundation (Sintel), berlisensi Creative Commons Attribution 3.0.",
-    getMovieUrl: () => "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-    getTvUrl: () => "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+    complianceNotice: "Media film terbuka karya Blender Foundation (Big Buck Bunny), berlisensi Creative Commons Attribution 3.0.",
+    getMovieUrl: () => "https://uploads.video-commander.com/sample/BigBuckBunny.mp4",
+    getTvUrl: () => "https://uploads.video-commander.com/sample/BigBuckBunny.mp4",
   },
 
   licensed: {

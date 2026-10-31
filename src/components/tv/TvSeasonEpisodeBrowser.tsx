@@ -10,6 +10,7 @@ import {
   Television,
   Spinner,
   ShieldCheck,
+  LockKey,
 } from "@phosphor-icons/react";
 import { TmdbTvSeasonSummary, TmdbTvEpisode } from "@/lib/tmdb/types";
 import { getTmdbStillUrl } from "@/lib/tmdb/images";
@@ -17,7 +18,7 @@ import { EmbeddedPlayer } from "@/components/player/EmbeddedPlayer";
 import { getSeasonEpisodesAction } from "@/app/actions/tv";
 import { checkTvEpisodeAccessAction } from "@/app/actions/subscription";
 import { LoginRequiredModal } from "@/components/auth/LoginRequiredModal";
-import { PremiumRequiredModal } from "@/components/subscription/PremiumRequiredModal";
+import { PremiumRequiredModal, PremiumGateReason } from "@/components/subscription/PremiumRequiredModal";
 
 export interface TvSeasonEpisodeBrowserProps {
   seriesId: number;
@@ -63,12 +64,14 @@ export function TvSeasonEpisodeBrowser({
   // State Modal Kuota Premium (Addendum Tahap 9)
   const [premiumModalState, setPremiumModalState] = useState<{
     isOpen: boolean;
+    reason?: PremiumGateReason;
     usedEpisodes: number;
     episodeLimit: number;
     remainingEpisodes: number;
     message?: string;
   }>({
     isOpen: false,
+    reason: "EPISODE_LIMIT_REACHED",
     usedEpisodes: 5,
     episodeLimit: 5,
     remainingEpisodes: 0,
@@ -97,8 +100,23 @@ export function TvSeasonEpisodeBrowser({
     return () => window.removeEventListener("focus", handleFocus);
   }, [seriesId, activeEpisode]);
 
+  const isVip = isVipInitial;
+
   // Memverifikasi izin tontonan episode ke server sebelum diputar
   const handleSelectEpisode = async (ep: TmdbTvEpisode) => {
+    // Pengguna non-VIP dibatasi: Episode 6 dan seterusnya terkunci khusus VIP Member
+    if (!isVip && ep.episode_number >= 6) {
+      setPremiumModalState({
+        isOpen: true,
+        reason: "VIP_REQUIRED_FOR_EPISODE",
+        usedEpisodes: 5,
+        episodeLimit: 5,
+        remainingEpisodes: 0,
+        message: `Episode ${ep.episode_number} terkunci khusus untuk VIP Member. Buka akses tak terbatas ke seluruh episode serial ini dengan bergabung menjadi VIP LayarRika.`,
+      });
+      return;
+    }
+
     setCheckingEpisodeId(ep.id);
     try {
       const decision = await checkTvEpisodeAccessAction({
@@ -116,9 +134,19 @@ export function TvSeasonEpisodeBrowser({
             setSelectedEpisodeForLogin(ep);
             setIsLoginModalOpen(true);
           }
+        } else if (decision.reason === "VIP_REQUIRED_FOR_EPISODE") {
+          setPremiumModalState({
+            isOpen: true,
+            reason: "VIP_REQUIRED_FOR_EPISODE",
+            usedEpisodes: 5,
+            episodeLimit: 5,
+            remainingEpisodes: 0,
+            message: decision.message,
+          });
         } else {
           setPremiumModalState({
             isOpen: true,
+            reason: "EPISODE_LIMIT_REACHED",
             usedEpisodes: decision.usedEpisodes,
             episodeLimit: decision.episodeLimit || 5,
             remainingEpisodes: decision.remainingEpisodes || 0,
@@ -129,6 +157,7 @@ export function TvSeasonEpisodeBrowser({
     } catch {
       setPremiumModalState({
         isOpen: true,
+        reason: "EPISODE_LIMIT_REACHED",
         usedEpisodes: 5,
         episodeLimit: 5,
         remainingEpisodes: 0,
@@ -279,6 +308,7 @@ export function TvSeasonEpisodeBrowser({
             const isPlayingThis =
               activeEpisode?.episode_number === ep.episode_number &&
               activeEpisode?.season_number === ep.season_number;
+            const isLockedForUser = !isVip && ep.episode_number >= 6;
 
             return (
               <div
@@ -287,6 +317,8 @@ export function TvSeasonEpisodeBrowser({
                 className={`group relative flex flex-col justify-between overflow-hidden rounded-xl border bg-[#171717] p-4 cursor-pointer transition-all duration-200 ${
                   isPlayingThis
                     ? "border-[#D9A52E] bg-[#1c1a14] ring-1 ring-[#D9A52E]/50 shadow-lg shadow-[#D9A52E]/5"
+                    : isLockedForUser
+                    ? "border-[#292929] hover:border-[#D9A52E]/50 hover:bg-[#1a1712]"
                     : "border-[#292929] hover:border-[#D9A52E]/50 hover:bg-[#1a1a1a]"
                 }`}
               >
@@ -307,11 +339,15 @@ export function TvSeasonEpisodeBrowser({
                       </div>
                     )}
 
-                    {/* Play Overlay / Loading Spinner */}
+                    {/* Play / Lock Overlay */}
                     <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition duration-200">
                       {checkingEpisodeId === ep.id ? (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0A0A0A] text-[#D9A52E] shadow-md border border-[#D9A52E]">
                           <Spinner size={16} className="animate-spin text-[#D9A52E]" />
+                        </div>
+                      ) : isLockedForUser ? (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-md">
+                          <LockKey size={15} weight="fill" />
                         </div>
                       ) : (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-md">
@@ -320,21 +356,35 @@ export function TvSeasonEpisodeBrowser({
                       )}
                     </div>
 
-                    {/* Badge Nomor Episode */}
-                    <div className="absolute top-1 left-1 rounded bg-[#0A0A0A]/85 px-1.5 py-0.5 text-[10px] font-bold text-[#D9A52E] backdrop-blur-xs">
-                      E{ep.episode_number}
+                    {/* Badge Nomor Episode & Status VIP */}
+                    <div
+                      className={`absolute top-1 left-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold backdrop-blur-xs ${
+                        isLockedForUser
+                          ? "bg-black/85 text-[#D9A52E] border border-[#D9A52E]/40"
+                          : "bg-[#0A0A0A]/85 text-[#D9A52E]"
+                      }`}
+                    >
+                      {isLockedForUser && <LockKey size={10} weight="fill" />}
+                      <span>E{ep.episode_number} {isLockedForUser ? "• VIP" : ""}</span>
                     </div>
                   </div>
 
                   {/* Info Episode */}
                   <div className="flex-1 min-w-0 space-y-1">
-                    <h4
-                      className={`text-sm font-bold transition line-clamp-1 ${
-                        isPlayingThis ? "text-[#D9A52E]" : "text-[#F5F5F5] group-hover:text-[#D9A52E]"
-                      }`}
-                    >
-                      {ep.episode_number}. {ep.name}
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <h4
+                        className={`text-sm font-bold transition line-clamp-1 ${
+                          isPlayingThis ? "text-[#D9A52E]" : "text-[#F5F5F5] group-hover:text-[#D9A52E]"
+                        }`}
+                      >
+                        {ep.episode_number}. {ep.name}
+                      </h4>
+                      {isLockedForUser && (
+                        <span className="shrink-0 rounded bg-[#D9A52E]/15 border border-[#D9A52E]/40 px-1.5 py-0.2 text-[9px] font-bold text-[#D9A52E]">
+                          VIP
+                        </span>
+                      )}
+                    </div>
 
                     {/* Metrics: Durasi, Air Date, Rating */}
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#737373]">
@@ -372,16 +422,23 @@ export function TvSeasonEpisodeBrowser({
                     <span>Terverifikasi TMDB</span>
                   </span>
 
-                  <span
-                    className={`flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-semibold transition ${
-                      isPlayingThis
-                        ? "border-[#D9A52E] bg-[#D9A52E] text-[#0A0A0A]"
-                        : "border-[#292929] bg-[#212121] text-[#F5F5F5] group-hover:border-[#D9A52E] group-hover:text-[#D9A52E]"
-                    }`}
-                  >
-                    <Play size={12} weight="fill" />
-                    <span>{isPlayingThis ? "Sedang Diputar" : "Putar Episode"}</span>
-                  </span>
+                  {isLockedForUser ? (
+                    <span className="flex items-center gap-1.5 rounded-lg border border-[#D9A52E]/40 bg-[#D9A52E]/10 px-3 py-1 text-xs font-bold text-[#D9A52E] group-hover:bg-[#D9A52E] group-hover:text-[#0A0A0A] transition">
+                      <LockKey size={12} weight="fill" />
+                      <span>Terkunci VIP</span>
+                    </span>
+                  ) : (
+                    <span
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-semibold transition ${
+                        isPlayingThis
+                          ? "border-[#D9A52E] bg-[#D9A52E] text-[#0A0A0A]"
+                          : "border-[#292929] bg-[#212121] text-[#F5F5F5] group-hover:border-[#D9A52E] group-hover:text-[#D9A52E]"
+                      }`}
+                    >
+                      <Play size={12} weight="fill" />
+                      <span>{isPlayingThis ? "Sedang Diputar" : "Putar Episode"}</span>
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -405,7 +462,7 @@ export function TvSeasonEpisodeBrowser({
       <PremiumRequiredModal
         isOpen={premiumModalState.isOpen}
         onClose={() => setPremiumModalState((prev) => ({ ...prev, isOpen: false }))}
-        reason="EPISODE_LIMIT_REACHED"
+        reason={premiumModalState.reason || "EPISODE_LIMIT_REACHED"}
         usedEpisodes={premiumModalState.usedEpisodes}
         episodeLimit={premiumModalState.episodeLimit}
         remainingEpisodes={premiumModalState.remainingEpisodes}

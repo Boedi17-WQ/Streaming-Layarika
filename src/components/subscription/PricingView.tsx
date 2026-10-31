@@ -14,6 +14,7 @@ import {
   CalendarCheck,
   CreditCard,
   Lightning,
+  Receipt,
 } from "@phosphor-icons/react";
 import { activateSimulatedVipAction } from "@/app/actions/subscription";
 import {
@@ -58,6 +59,9 @@ interface PricingViewProps {
   isAuthenticated: boolean;
   simulatedBillingEnabled: boolean;
   clientKey?: string;
+  userName?: string | null;
+  userEmail?: string | null;
+  latestOrderId?: string | null;
 }
 
 export function PricingView({
@@ -68,6 +72,9 @@ export function PricingView({
   isAuthenticated,
   simulatedBillingEnabled,
   clientKey = "",
+  userName = null,
+  userEmail = null,
+  latestOrderId = null,
 }: PricingViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -198,8 +205,11 @@ export function PricingView({
   };
 
   // Callback saat pembayaran pada Midtrans Simulator Modal selesai
-  const handleSimulatedPaySuccess = async (orderId: string) => {
-    const confirmRes = await confirmMidtransPaymentAction(orderId);
+  const handleSimulatedPaySuccess = async (
+    orderId: string,
+    options?: { isSimulated?: boolean }
+  ) => {
+    const confirmRes = await confirmMidtransPaymentAction(orderId, options);
     if (confirmRes.success) {
       setFeedback({
         type: "success",
@@ -270,6 +280,8 @@ export function PricingView({
         grossAmount={simulatedModalData.grossAmount}
         planName={simulatedModalData.planName}
         redirectUrl={simulatedModalData.redirectUrl}
+        userName={userName}
+        userEmail={userEmail}
         onClose={() => setSimulatedModalData((prev) => ({ ...prev, isOpen: false }))}
         onPaySuccess={handleSimulatedPaySuccess}
       />
@@ -400,6 +412,21 @@ export function PricingView({
                           </span>
                         </div>
                       )}
+
+                      {/* Tombol Lihat Faktur / Invoice untuk VIP Member Aktif */}
+                      <div className="pt-2">
+                        <Link
+                          href={
+                            latestOrderId
+                              ? `/invoice/${encodeURIComponent(latestOrderId)}`
+                              : "/profile"
+                          }
+                          className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[#D9A52E]/40 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 text-[#D9A52E] text-xs font-bold transition shadow-sm cursor-pointer"
+                        >
+                          <Receipt size={16} weight="bold" />
+                          <span>Lihat Faktur / Invoice Pembayaran</span>
+                        </Link>
+                      </div>
                     </div>
                   ) : !isAuthenticated ? (
                     <Link

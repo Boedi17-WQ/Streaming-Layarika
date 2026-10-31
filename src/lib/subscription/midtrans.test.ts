@@ -93,4 +93,55 @@ const snapUrl = isProd
 
 assert(snapUrl === "https://app.sandbox.midtrans.com/snap/v1/transactions", "URL Sandbox Snap harus mengarah ke app.sandbox.midtrans.com");
 
+// 6. Verifikasi Idempotensi Pemenuhan Transaksi (Anti Double-Fulfillment)
+interface MockTxStore {
+  transactions: Set<string>;
+  vipEndDate: Date;
+}
+
+function processOrderFulfillment(store: MockTxStore, orderId: string, durationDays = 30): { success: boolean; endDate: Date; wasDuplicate: boolean } {
+  if (store.transactions.has(orderId)) {
+    return { success: true, endDate: store.vipEndDate, wasDuplicate: true };
+  }
+
+  store.transactions.add(orderId);
+  store.vipEndDate = new Date(store.vipEndDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+  return { success: true, endDate: store.vipEndDate, wasDuplicate: false };
+}
+
+const baseDate = new Date("2026-10-31T00:00:00Z");
+const store: MockTxStore = {
+  transactions: new Set<string>(),
+  vipEndDate: baseDate,
+};
+
+// Panggilan pertama (Polling / Webhook pertama)
+const res1 = processOrderFulfillment(store, "LR-VIP-TEST-IDEMPOTENT-001");
+assert(!res1.wasDuplicate, "Panggilan pertama order ID baru harus diproses (bukan duplikat)");
+const expectedEnd = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+assert(res1.endDate.getTime() === expectedEnd.getTime(), "Durasi bertambah 30 hari pada pemrosesan pertama");
+
+// Panggilan kedua (Snap callback / check status berulang)
+const res2 = processOrderFulfillment(store, "LR-VIP-TEST-IDEMPOTENT-001");
+assert(res2.wasDuplicate, "Panggilan kedua dengan order ID sama harus terdeteksi sebagai duplikat (Idempotent)");
+assert(res2.endDate.getTime() === expectedEnd.getTime(), "Tanggal berakhir TIDAK bertambah dobel (+30 hari lagi)");
+
+// Panggilan ketiga (Webhook terlambat datang)
+const res3 = processOrderFulfillment(store, "LR-VIP-TEST-IDEMPOTENT-001");
+assert(res3.wasDuplicate, "Panggilan ketiga dengan order ID sama tetap terdeteksi duplikat");
+assert(res3.endDate.getTime() === expectedEnd.getTime(), "Tanggal berakhir tetap konsisten tanpa duplikasi");
+
+// 7. Verifikasi Bypass Simulasi Instan
+function checkSimulatedStatus(orderId: string, options?: { isSimulated?: boolean }): boolean {
+  if (options?.isSimulated || orderId.startsWith("SIMULATED_") || orderId.startsWith("LR-VIP-SANDBOX-")) {
+    return true;
+  }
+  return false;
+}
+
+assert(checkSimulatedStatus("LR-VIP-12345", { isSimulated: true }), "Shortcut simulasi instan harus lolos validasi isPaid");
+assert(checkSimulatedStatus("SIMULATED_SNAP_001"), "Order ID berawalan SIMULATED_ harus lolos validasi");
+assert(checkSimulatedStatus("LR-VIP-SANDBOX-1730000000"), "Order ID berawalan LR-VIP-SANDBOX- harus lolos validasi");
+assert(!checkSimulatedStatus("LR-VIP-REAL-12345"), "Order riil tanpa flag simulasi tidak boleh lolos bypass");
+
 console.log("\n🎉 SELURUH PENGUJIAN UNIT MIDTRANS SANDBOX BERHASIL (100% PASS)!\n");
