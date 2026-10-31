@@ -60,6 +60,7 @@ export const ALLOWED_STREAM_HOSTS = [
   "multiembed.mov",
   "streamingnow.mov",
   "vsembed.su",
+  "vidlink.pro",
   "uploads.video-commander.com",
   "vjs.zencdn.net",
   "interactive-examples.mdn.mozilla.net",
@@ -149,15 +150,15 @@ export const STREAMING_PROVIDERS: Record<StreamingProviderId, StreamingProvider>
 
   vidsrc: {
     id: "vidsrc",
-    name: "Server 2 (VidSrc)",
+    name: "Server 2 (VidLink)",
     badge: "Multi-Audio",
     verificationStatus: "THIRD_PARTY_EMBED",
     isPlayable: true,
-    complianceNotice: "Server alternatif pemutaran video dengan opsi multi-bahasa dan subtitle.",
+    complianceNotice: "Server alternatif pemutaran video dengan opsi multi-bahasa, subtitle, dan responsif di mobile & desktop.",
     getMovieUrl: (tmdbId: number) =>
-      `https://vsembed.su/embed/movie/${tmdbId}`,
+      `https://vidlink.pro/movie/${tmdbId}?primaryColor=D9A52E`,
     getTvUrl: (tmdbId: number, season: number, episode: number) =>
-      `https://vsembed.su/embed/tv/${tmdbId}/${season}/${episode}`,
+      `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}?primaryColor=D9A52E`,
   },
 
   demo: {
