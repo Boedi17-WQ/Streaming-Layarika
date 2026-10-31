@@ -128,7 +128,7 @@ export async function getUserInvoices(userId: string): Promise<InvoiceData[]> {
     where: { slug: "premium-monthly" },
   });
 
-  return transactions.map((tx) => ({
+  return transactions.map((tx: any) => ({
     orderId: tx.orderId,
     invoiceNumber: formatInvoiceNumber(tx.orderId, tx.createdAt),
     transactionDate: tx.createdAt,
