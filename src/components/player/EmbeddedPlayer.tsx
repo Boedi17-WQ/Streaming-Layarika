@@ -19,6 +19,7 @@ import {
   Crown,
   Clock,
   CornersIn,
+  ArrowSquareOut,
 } from "@phosphor-icons/react";
 import { recordWatchProgressAction } from "@/app/actions/history";
 import {
@@ -352,7 +353,8 @@ export function EmbeddedPlayer({
       : rawStreamUrl
     : null);
 
-  const handleStartPlay = async () => {
+  const handleStartPlay = async (targetProvider?: StreamingProviderId) => {
+    const providerToUse = targetProvider || activeProvider;
     setIsLoading(true);
 
     try {
@@ -361,7 +363,7 @@ export function EmbeddedPlayer({
         tmdbId,
         seasonNumber: mediaType === "TV" ? seasonNumber : undefined,
         episodeNumber: mediaType === "TV" ? episodeNumber : undefined,
-        providerId: activeProvider,
+        providerId: providerToUse,
         youtubeKey: youtubeKey || undefined,
         licensedUrl: licensedUrl || undefined,
       });
@@ -425,13 +427,15 @@ export function EmbeddedPlayer({
 
   const handleSelectProvider = (providerId: StreamingProviderId) => {
     if (activeProvider !== providerId) {
+      const wasPlaying = isPlaying;
       stopAllPlayback();
+      setServerStreamUrl(null);
       setActiveProvider(providerId);
       setIsCompleted(false);
       setDemoVideoError(false);
-      // Jika pengguna sebelumnya sudah memutar, verifikasi kembali izin sebelum melanjutkan ke provider baru
-      if (isPlaying) {
-        handleStartPlay();
+      // Jika pengguna sebelumnya sedang memutar, langsung putar provider baru dengan parameter eksplisit
+      if (wasPlaying) {
+        handleStartPlay(providerId);
       }
     }
   };
@@ -677,7 +681,7 @@ export function EmbeddedPlayer({
                   {isTvEpisodeVipLocked ? (
                     <button
                       type="button"
-                      onClick={handleStartPlay}
+                      onClick={() => handleStartPlay()}
                       aria-label="Episode terkunci khusus VIP"
                       className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-tr from-[#D9A52E] via-[#F3C254] to-[#FFF0B3] shadow-2xl shadow-[#D9A52E]/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#D9A52E]/40 cursor-pointer"
                     >
@@ -686,7 +690,7 @@ export function EmbeddedPlayer({
                   ) : (
                     <button
                       type="button"
-                      onClick={handleStartPlay}
+                      onClick={() => handleStartPlay()}
                       aria-label={`Mulai putar ${currentProvider.name}`}
                       className="group relative flex h-20 w-20 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-2xl shadow-[#D9A52E]/30 transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-4 focus:ring-[#D9A52E]/40"
                     >
@@ -748,7 +752,7 @@ export function EmbeddedPlayer({
                 key={`stream-${activeProvider}-${seasonNumber}-${episodeNumber}-${refreshKey}`}
                 src={streamUrl}
                 title={`Pemutar Streaming ${title}`}
-                allow="autoplay *; encrypted-media *; gyroscope *; picture-in-picture *; fullscreen *"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
                 referrerPolicy="origin"
                 onLoad={() => setIsLoading(false)}
@@ -848,17 +852,31 @@ export function EmbeddedPlayer({
       {/* 3. Bar Informasi Kepatuhan Keamanan */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[#737373] px-1">
         <div className="flex items-center gap-1.5">
-          <ShieldCheck size={16} className="text-[#D9A52E]" />
+          <ShieldCheck size={16} className="text-[#D9A52E] shrink-0" />
           <span>
             {currentProvider.complianceNotice ||
               "Pemutar diisolasi dengan sandbox ketat. Sumber tidak berlisensi dinonaktifkan demi perlindungan hak cipta."}
           </span>
         </div>
-        {mediaType === "TV" && (
-          <div className="font-semibold text-[#A3A3A3]">
-            Musim {seasonNumber} • Episode {episodeNumber} {episodeTitle ? `— ${episodeTitle}` : ""}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {streamUrl && (activeProvider === "multiembed" || activeProvider === "vidsrc") && (
+            <a
+              href={streamUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[#D9A52E] hover:underline text-[11px] font-medium"
+              title="Jika video tidak muncul di browser HP, buka pemutar langsung di tab baru"
+            >
+              <ArrowSquareOut size={13} />
+              <span>Buka di Tab Baru</span>
+            </a>
+          )}
+          {mediaType === "TV" && (
+            <div className="font-semibold text-[#A3A3A3]">
+              Musim {seasonNumber} • Episode {episodeNumber} {episodeTitle ? `— ${episodeTitle}` : ""}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 4. Modal Autentikasi Wajib Login Sebelum Menonton (Addendum Tahap 9) */}
