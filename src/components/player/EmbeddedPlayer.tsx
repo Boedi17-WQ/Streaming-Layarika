@@ -19,6 +19,7 @@ import {
   Crown,
   Clock,
   CornersIn,
+  CornersOut,
   ArrowSquareOut,
 } from "@phosphor-icons/react";
 import { recordWatchProgressAction } from "@/app/actions/history";
@@ -82,29 +83,66 @@ export function EmbeddedPlayer({
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
+      const doc = document as unknown as {
+        fullscreenElement?: Element;
+        webkitFullscreenElement?: Element;
+        mozFullScreenElement?: Element;
+        msFullscreenElement?: Element;
+      };
+      setIsFullscreen(
+        Boolean(
+          doc.fullscreenElement ||
+          doc.webkitFullscreenElement ||
+          doc.mozFullScreenElement ||
+          doc.msFullscreenElement
+        )
+      );
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("mozfullscreenchange", handleFullscreenChange);
+      document.removeEventListener("MSFullscreenChange", handleFullscreenChange);
     };
   }, []);
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    if (!document.fullscreenElement) {
-      if (container.requestFullscreen) {
-        container.requestFullscreen().catch((err) => console.warn("Fullscreen request error:", err));
+    const doc = document as unknown as {
+      fullscreenElement?: Element;
+      webkitFullscreenElement?: Element;
+      exitFullscreen?: () => Promise<void>;
+      webkitExitFullscreen?: () => Promise<void>;
+    };
+
+    const isCurrentlyFs = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
+
+    if (!isCurrentlyFs) {
+      const el = container as unknown as {
+        requestFullscreen?: () => Promise<void>;
+        webkitRequestFullscreen?: () => Promise<void>;
+      };
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch((err) => console.warn("Fullscreen request error:", err));
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
       }
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch((err) => console.warn("Fullscreen exit error:", err));
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch((err) => console.warn("Fullscreen exit error:", err));
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
       }
     }
-  };
+  }, []);
 
   // State Modal Autentikasi Wajib Login (Addendum Tahap 9)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
@@ -622,6 +660,21 @@ export function EmbeddedPlayer({
             <CheckCircle size={14} weight={isCompleted ? "fill" : "regular"} className={isCompleted ? "text-emerald-400" : "text-[#737373]"} />
             <span className="hidden sm:inline">{isCompleted ? "Selesai" : "Tandai Selesai"}</span>
           </button>
+
+          {/* Tombol Layar Penuh Header (Fullscreen Toggle) */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            title={isFullscreen ? "Keluar Layar Penuh (Esc)" : "Putar Layar Penuh (Fullscreen)"}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-[#A3A3A3] transition-all hover:border-[#D9A52E]/50 hover:text-[#F5F5F5] active:scale-95 cursor-pointer"
+          >
+            {isFullscreen ? (
+              <CornersIn size={14} weight="bold" className="text-[#D9A52E]" />
+            ) : (
+              <CornersOut size={14} weight="bold" className="text-[#D9A52E]" />
+            )}
+            <span className="hidden sm:inline">{isFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}</span>
+          </button>
         </div>
       </div>
 
@@ -632,18 +685,25 @@ export function EmbeddedPlayer({
           isFullscreen ? "fixed inset-0 z-50 !aspect-auto !h-screen !w-screen !rounded-none !border-0" : ""
         }`}
       >
-        {/* Tombol Melayang Keluar Fullscreen jika sedang dalam mode Layar Penuh */}
-        {isFullscreen && (
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            title="Keluar Layar Penuh (Esc)"
-            className="absolute top-4 right-4 z-30 flex items-center gap-1.5 rounded-xl border border-white/20 bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition hover:bg-black/90 hover:scale-105"
-          >
-            <CornersIn size={16} weight="bold" />
-            <span>Keluar Layar Penuh</span>
-          </button>
-        )}
+        {/* Tombol Melayang Layar Penuh (Fullscreen Toggle) di Pojok Kanan Atas Player */}
+        <button
+          type="button"
+          onClick={toggleFullscreen}
+          title={isFullscreen ? "Keluar Layar Penuh (Esc)" : "Mode Layar Penuh (Fullscreen)"}
+          className="absolute top-3 right-3 z-30 flex items-center gap-1.5 rounded-xl border border-white/20 bg-black/75 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-md transition-all duration-200 hover:bg-black/95 hover:border-[#D9A52E]/60 hover:scale-105 active:scale-95 cursor-pointer"
+        >
+          {isFullscreen ? (
+            <>
+              <CornersIn size={16} weight="bold" className="text-[#D9A52E]" />
+              <span className="text-[11px]">Keluar Layar Penuh</span>
+            </>
+          ) : (
+            <>
+              <CornersOut size={16} weight="bold" className="text-[#D9A52E]" />
+              <span className="text-[11px] hidden sm:inline">Layar Penuh</span>
+            </>
+          )}
+        </button>
         {/* Loading Spinner saat memuat */}
         {isLoading && (
           <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0A0A0A]/90 backdrop-blur-xs text-[#F5F5F5] transition-opacity duration-300">
@@ -849,34 +909,57 @@ export function EmbeddedPlayer({
         )}
       </div>
 
-      {/* 3. Bar Informasi Kepatuhan Keamanan */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[#737373] px-1">
-        <div className="flex items-center gap-1.5">
-          <ShieldCheck size={16} className="text-[#D9A52E] shrink-0" />
-          <span>
-            {currentProvider.complianceNotice ||
-              "Pemutar diisolasi dengan sandbox ketat. Sumber tidak berlisensi dinonaktifkan demi perlindungan hak cipta."}
-          </span>
+      {/* 3. Bar Informasi Kepatuhan Keamanan & Panduan Subtitle */}
+      <div className="space-y-2 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[#737373]">
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck size={16} className="text-[#D9A52E] shrink-0" />
+            <span>
+              {currentProvider.complianceNotice ||
+                "Pemutar diisolasi dengan sandbox ketat. Sumber tidak berlisensi dinonaktifkan demi perlindungan hak cipta."}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {streamUrl && (activeProvider === "multiembed" || activeProvider === "vidsrc") && (
+              <a
+                href={streamUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[#D9A52E] hover:underline text-[11px] font-medium"
+                title="Jika video tidak muncul di browser HP, buka pemutar langsung di tab baru"
+              >
+                <ArrowSquareOut size={13} />
+                <span>Buka di Tab Baru</span>
+              </a>
+            )}
+            {mediaType === "TV" && (
+              <div className="font-semibold text-[#A3A3A3]">
+                Musim {seasonNumber} • Episode {episodeNumber} {episodeTitle ? `— ${episodeTitle}` : ""}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {streamUrl && (activeProvider === "multiembed" || activeProvider === "vidsrc") && (
-            <a
-              href={streamUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[#D9A52E] hover:underline text-[11px] font-medium"
-              title="Jika video tidak muncul di browser HP, buka pemutar langsung di tab baru"
-            >
-              <ArrowSquareOut size={13} />
-              <span>Buka di Tab Baru</span>
-            </a>
-          )}
-          {mediaType === "TV" && (
-            <div className="font-semibold text-[#A3A3A3]">
-              Musim {seasonNumber} • Episode {episodeNumber} {episodeTitle ? `— ${episodeTitle}` : ""}
+
+        {/* Panduan Cepat Subtitle, Audio & Fullscreen */}
+        {isPlaying && (activeProvider === "vidsrc" || activeProvider === "multiembed") && (
+          <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-white/10 bg-[#141414]/90 px-3.5 py-2.5 text-xs text-[#A3A3A3] shadow-inner">
+            <div className="flex items-center gap-2">
+              <span className="flex h-5 w-6 shrink-0 items-center justify-center rounded bg-[#D9A52E]/15 border border-[#D9A52E]/30 font-bold text-[10px] text-[#D9A52E]">
+                CC
+              </span>
+              <span className="text-[11px]">
+                <strong className="text-[#F5F5F5]">Cara Aktifkan Subtitle:</strong>{" "}
+                {activeProvider === "vidsrc"
+                  ? "Ketuk layar video satu kali untuk menampilkan tombol kontrol, lalu klik ikon [CC] atau ikon Gerigi di pojok kanan bawah player untuk memilih Subtitle Bahasa Indonesia."
+                  : "Gunakan menu dropdown 'SERVERS' dan 'SUBTITLES' di bagian atas video untuk memilih subtitle Bahasa Indonesia."}
+              </span>
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-[#D9A52E] shrink-0 font-medium">
+              <CornersOut size={13} weight="bold" />
+              <span>Gunakan tombol Layar Penuh di atas video untuk mode bioskop</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 4. Modal Autentikasi Wajib Login Sebelum Menonton (Addendum Tahap 9) */}

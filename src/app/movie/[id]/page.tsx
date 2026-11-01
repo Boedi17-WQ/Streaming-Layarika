@@ -207,7 +207,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
               ========================================================================= */}
           <div className="lg:col-span-8 xl:col-span-9 space-y-5">
             {/* A. Pemutar Streaming Langsung di Paling Atas */}
-            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-[#222226] bg-[#000000] shadow-2xl">
+            <div className="w-full">
               <Suspense
                 fallback={
                   <div className="relative aspect-video w-full rounded-2xl border border-[#222226] bg-[#050505] flex items-center justify-center animate-pulse">
