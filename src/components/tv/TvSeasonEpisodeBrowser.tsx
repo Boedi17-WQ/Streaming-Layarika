@@ -25,7 +25,10 @@ import { MovieSynopsis } from "@/components/movie/MovieSynopsis";
 import { MovieCard } from "@/components/home/MovieCard";
 import { VipPromoCard } from "@/components/subscription/VipPromoCard";
 import { getSeasonEpisodesAction } from "@/app/actions/tv";
-import { checkTvEpisodeAccessAction } from "@/app/actions/subscription";
+import {
+  checkTvEpisodeAccessAction,
+  getUserEntitlementAction,
+} from "@/app/actions/subscription";
 import { LoginRequiredModal } from "@/components/auth/LoginRequiredModal";
 import {
   PremiumRequiredModal,
@@ -130,7 +133,30 @@ export function TvSeasonEpisodeBrowser({
     return () => window.removeEventListener("focus", handleFocus);
   }, [seriesId, activeEpisode]);
 
-  const isVip = isVipInitial;
+  const [liveVip, setLiveVip] = useState<boolean | null>(null);
+  const isVip = liveVip !== null ? liveVip : isVipInitial;
+
+  // Sinkronisasi status VIP pengguna secara live dari server
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncVipStatus = async () => {
+      try {
+        const ent = await getUserEntitlementAction();
+        if (isMounted && ent && typeof ent.isVip === "boolean") {
+          setLiveVip(ent.isVip);
+        }
+      } catch {}
+    };
+
+    syncVipStatus();
+
+    window.addEventListener("focus", syncVipStatus);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", syncVipStatus);
+    };
+  }, []);
 
   // Memverifikasi izin tontonan episode ke server sebelum diputar
   const handleSelectEpisode = async (ep: TmdbTvEpisode) => {

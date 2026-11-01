@@ -177,29 +177,37 @@ export function EmbeddedPlayer({
   );
 
 
-  // Sinkronkan status hak akses ketika jendela/tab kembali aktif (fokus)
-  // Misalnya pengguna membuka tab lain untuk login, lalu kembali ke tab ini
+  // Sinkronkan status hak akses ketika komponen dimuat atau jendela kembali aktif (fokus)
   useEffect(() => {
-    const handleFocus = async () => {
+    let isMounted = true;
+
+    const syncAccess = async () => {
       if (mediaType === "MOVIE") {
         try {
           const res = await checkMovieWatchAccessAction(tmdbId);
-          if (res.allowed || res.reason !== "UNAUTHENTICATED") {
-            setIsLoginModalOpen(false);
+          if (isMounted) {
+            if (res.allowed || res.reason !== "UNAUTHENTICATED") {
+              setIsLoginModalOpen(false);
+            }
+            setMovieEntitlement({
+              allowed: res.allowed,
+              isVip: res.isVip,
+              consumedSeconds: res.consumedSeconds,
+              remainingSeconds: res.remainingSeconds,
+            });
           }
-          setMovieEntitlement({
-            allowed: res.allowed,
-            isVip: res.isVip,
-            consumedSeconds: res.consumedSeconds,
-            remainingSeconds: res.remainingSeconds,
-          });
         } catch {}
       }
     };
 
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [mediaType, tmdbId]);
+    syncAccess();
+
+    window.addEventListener("focus", syncAccess);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", syncAccess);
+    };
+  }, [mediaType, tmdbId, isVipInitial]);
 
   // Deteksi navigasi rute Next.js untuk menghentikan pemutaran
   const pathname = usePathname();

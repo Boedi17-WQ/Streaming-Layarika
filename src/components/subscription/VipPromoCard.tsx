@@ -1,14 +1,44 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Crown, CheckCircle } from "@phosphor-icons/react";
+import { getUserEntitlementAction } from "@/app/actions/subscription";
 
 export interface VipPromoCardProps {
-  isVip: boolean;
+  isVip?: boolean;
   className?: string;
 }
 
-export function VipPromoCard({ isVip, className = "" }: VipPromoCardProps) {
+export function VipPromoCard({ isVip: isVipProp = false, className = "" }: VipPromoCardProps) {
+  const [liveVip, setLiveVip] = useState<boolean | null>(null);
+
+  const isVip = liveVip !== null ? liveVip : isVipProp;
+
+  // Sinkronisasi status VIP pengguna secara live dari server
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncVipStatus = async () => {
+      try {
+        const ent = await getUserEntitlementAction();
+        if (isMounted && ent && typeof ent.isVip === "boolean") {
+          setLiveVip(ent.isVip);
+        }
+      } catch {
+        // Fallback aman
+      }
+    };
+
+    syncVipStatus();
+
+    window.addEventListener("focus", syncVipStatus);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", syncVipStatus);
+    };
+  }, []);
+
   if (isVip) {
     return (
       <div
@@ -26,7 +56,7 @@ export function VipPromoCard({ isVip, className = "" }: VipPromoCardProps) {
         </div>
 
         <p className="mt-2 text-xs text-[#A1A1AA] leading-relaxed">
-          Status VIP Anda saat ini <strong className="text-emerald-400">Aktif</strong>. Nikmati akses tanpa batas ke semua film & serial tanpa jeda kuota.
+          Status VIP Anda saat ini <strong className="text-emerald-400 font-semibold">Aktif</strong>. Nikmati akses tanpa batas ke semua film & serial tanpa jeda kuota.
         </p>
 
         <div className="mt-3 flex flex-col gap-1.5">
