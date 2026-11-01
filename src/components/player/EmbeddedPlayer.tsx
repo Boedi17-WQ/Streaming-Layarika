@@ -18,7 +18,6 @@ import {
   Play,
   Crown,
   Clock,
-  CornersIn,
   CornersOut,
   ArrowSquareOut,
 } from "@phosphor-icons/react";
@@ -112,37 +111,7 @@ export function EmbeddedPlayer({
     };
   }, []);
 
-  const toggleFullscreen = useCallback(() => {
-    const container = containerRef.current;
-    if (!container) return;
 
-    const doc = document as unknown as {
-      fullscreenElement?: Element;
-      webkitFullscreenElement?: Element;
-      exitFullscreen?: () => Promise<void>;
-      webkitExitFullscreen?: () => Promise<void>;
-    };
-
-    const isCurrentlyFs = Boolean(doc.fullscreenElement || doc.webkitFullscreenElement);
-
-    if (!isCurrentlyFs) {
-      const el = container as unknown as {
-        requestFullscreen?: () => Promise<void>;
-        webkitRequestFullscreen?: () => Promise<void>;
-      };
-      if (el.requestFullscreen) {
-        el.requestFullscreen().catch((err) => console.warn("Fullscreen request error:", err));
-      } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-      }
-    } else {
-      if (doc.exitFullscreen) {
-        doc.exitFullscreen().catch((err) => console.warn("Fullscreen exit error:", err));
-      } else if (doc.webkitExitFullscreen) {
-        doc.webkitExitFullscreen();
-      }
-    }
-  }, []);
 
   // State Modal Autentikasi Wajib Login (Addendum Tahap 9)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
@@ -678,25 +647,6 @@ export function EmbeddedPlayer({
           isFullscreen ? "fixed inset-0 z-50 !aspect-auto !h-screen !w-screen !rounded-none !border-0" : ""
         }`}
       >
-        {/* Tombol Melayang Layar Penuh (Fullscreen Toggle) di Pojok Kanan Atas Player */}
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          title={isFullscreen ? "Keluar Layar Penuh (Esc)" : "Mode Layar Penuh (Fullscreen)"}
-          className="absolute top-3 right-3 z-30 flex items-center gap-1.5 rounded-xl border border-white/20 bg-black/75 px-3 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-md transition-all duration-200 hover:bg-black/95 hover:border-[#D9A52E]/60 hover:scale-105 active:scale-95 cursor-pointer"
-        >
-          {isFullscreen ? (
-            <>
-              <CornersIn size={16} weight="bold" className="text-[#D9A52E]" />
-              <span className="text-[11px]">Keluar Layar Penuh</span>
-            </>
-          ) : (
-            <>
-              <CornersOut size={16} weight="bold" className="text-[#D9A52E]" />
-              <span className="text-[11px] hidden sm:inline">Layar Penuh</span>
-            </>
-          )}
-        </button>
         {/* Loading Spinner saat memuat */}
         {isLoading && (
           <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0A0A0A]/90 backdrop-blur-xs text-[#F5F5F5] transition-opacity duration-300">
