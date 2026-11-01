@@ -156,6 +156,13 @@ export interface TmdbCastMember {
 export interface TmdbCreditsResponse {
   id: number;
   cast: TmdbCastMember[];
+  crew?: Array<{
+    id: number;
+    name: string;
+    job?: string;
+    department?: string;
+    profile_path: string | null;
+  }>;
 }
 
 export interface TmdbTvEpisode {

@@ -4,13 +4,13 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import Link from "next/link";
 import Image from "next/image";
-import { Container } from "@/components/ui/Container";
 import { MovieCard } from "@/components/home/MovieCard";
 import {
   getMovieDetails,
   getMovieCredits,
   getMovieRecommendations,
   getMovieVideos,
+  getPopularMovies,
   isTmdbConfigured,
 } from "@/lib/tmdb/client";
 import {
@@ -26,19 +26,13 @@ import { getUserSubscriptionStatus } from "@/services/subscription.service";
 import { WatchlistButton } from "@/components/watchlist/WatchlistButton";
 import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { EmbeddedPlayer } from "@/components/player/EmbeddedPlayer";
+import { MovieShareButton } from "@/components/movie/MovieShareButton";
+import { MovieSynopsis } from "@/components/movie/MovieSynopsis";
 import {
   Star,
-  Clock,
-  CalendarBlank,
-  FilmReel,
   ArrowLeft,
-  Play,
-  Users,
-  ShieldCheck,
-  Globe,
-  Buildings,
-  CurrencyDollar,
-  Translate,
+  Crown,
+  Fire,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const instant = false;
@@ -90,21 +84,21 @@ export async function generateMetadata({
 
 export default async function MovieDetailPage({ params }: MovieDetailPageProps) {
   const { id } = await params;
-
-  // Cek apakah TMDB aktif atau gunakan fallback data lokal
   const hasTmdb = isTmdbConfigured();
 
   let movie = null;
   let credits = null;
   let recommendations: ReturnType<typeof mapTmdbMovieToMovie>[] = [];
   let youtubeKey: string | null = null;
+  let top10Movies: ReturnType<typeof mapTmdbMovieToMovie>[] = [];
 
   if (hasTmdb) {
-    const [movieData, creditsData, recsData, videosData] = await Promise.all([
+    const [movieData, creditsData, recsData, videosData, popularData] = await Promise.all([
       getMovieDetails(id),
       getMovieCredits(id),
       getMovieRecommendations(id),
       getMovieVideos(id),
+      getPopularMovies(1),
     ]);
 
     if (!movieData) {
@@ -114,6 +108,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
     movie = movieData;
     credits = creditsData;
     recommendations = (recsData || []).map(mapTmdbMovieToMovie);
+    top10Movies = (popularData || []).map(mapTmdbMovieToMovie).slice(0, 10);
 
     // Cari trailer resmi dari TMDB (YouTube)
     const officialTrailer =
@@ -127,7 +122,6 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
     if (!mockFound && id !== "hero-tears-of-steel") {
       notFound();
     }
-    // Bentuk mock movie details jika belum ada TMDB token
     movie = {
       id: 999999,
       title: mockFound?.title || "Tears of Steel",
@@ -150,226 +144,74 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
       })),
     };
     recommendations = MOCK_FEATURED_MOVIES.filter((m) => m.id !== id);
+    top10Movies = MOCK_FEATURED_MOVIES.slice(0, 10);
   }
 
-  const backdropUrl = getTmdbBackdropUrl(movie.backdrop_path, "w1280");
-  const posterUrl = getTmdbPosterUrl(movie.poster_path, "w500");
   const releaseYear = movie.release_date
     ? movie.release_date.substring(0, 4)
     : "—";
 
-  return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24 text-[#F5F5F5]">
-      {/* 1. Backdrop Header Sinematik */}
-      <div className="relative min-h-[480px] w-full overflow-hidden border-b border-[#292929] bg-[#121212]">
-        {backdropUrl ? (
-          <Image
-            src={backdropUrl}
-            alt={`Backdrop ${movie.title}`}
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-top opacity-30"
-          />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1c1c1c] to-[#0A0A0A]" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/70 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
+  // Data Pemeran & Sutradara (Format Circular Avatar)
+  const director = credits?.crew?.find(
+    (c) => c.job === "Director" || c.department === "Directing"
+  );
 
-        {/* Back Link Button */}
-        <Container className="relative pt-6">
+  const directorEntry = director
+    ? [
+        {
+          id: director.id,
+          name: director.name,
+          role: "Sutradara",
+          profileUrl: getTmdbProfileUrl(director.profile_path, "w185"),
+        },
+      ]
+    : [];
+
+  const castEntries = (credits?.cast || []).slice(0, 9).map((actor) => ({
+    id: actor.id,
+    name: actor.name,
+    role: actor.character || "Pemeran",
+    profileUrl: getTmdbProfileUrl(actor.profile_path, "w185"),
+  }));
+
+  const allCrewAndCast = [...directorEntry, ...castEntries];
+
+  return (
+    <div className="min-h-screen bg-[#0A0A0C] text-[#F5F5F5] pb-24">
+      {/* 1. Sub-nav Breadcrumb Ringkas */}
+      <div className="border-b border-[#1C1C20] bg-[#0E0E12]/80 backdrop-blur-md sticky top-16 z-20">
+        <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between text-xs">
           <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-[#292929] bg-[#171717]/80 px-3 py-1.5 text-xs font-semibold text-[#A3A3A3] backdrop-blur-md transition hover:border-[#D9A52E] hover:text-[#F5F5F5]"
+            href="/catalog?type=movie"
+            className="inline-flex items-center gap-1.5 text-[#8E8E93] hover:text-[#D9A52E] transition-colors font-medium"
           >
             <ArrowLeft size={14} />
-            <span>Kembali ke Katalog</span>
+            <span>Katalog Film</span>
           </Link>
-        </Container>
+          <div className="flex items-center gap-2 text-[#71717A] text-[11px] truncate max-w-[280px] sm:max-w-md">
+            <span>Beranda</span>
+            <span>/</span>
+            <span>Film</span>
+            <span>/</span>
+            <span className="text-[#E4E4E7] truncate font-medium">{movie.title}</span>
+          </div>
+        </div>
       </div>
 
-      {/* 2. Main Content Info (Overlapping Hero) */}
-      <Container className="relative -mt-64 z-10">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12">
-          {/* Kolom Kiri: Poster */}
-          <div className="md:col-span-4 lg:col-span-3">
-            <div className="sticky top-24 space-y-4">
-              <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl border border-[#292929] bg-[#171717] shadow-2xl">
-                {posterUrl ? (
-                  <Image
-                    src={posterUrl}
-                    alt={`Poster ${movie.title}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 300px"
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-[#1C1C1C] to-[#0A0A0A]">
-                    <FilmReel size={56} className="text-[#D9A52E]/40 mb-3" />
-                    <span className="text-sm font-bold text-[#F5F5F5]">{movie.title}</span>
-                  </div>
-                )}
-              </div>
+      {/* 2. Main Two-Column Layout (Desain Minimalis Streaming) */}
+      <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
 
-              {/* Status Pemutaran Transparan */}
-              <div className="rounded-xl border border-[#292929] bg-[#171717] p-4 text-xs space-y-2 text-[#A3A3A3]">
-                <div className="flex items-center gap-1.5 font-semibold text-[#D9A52E]">
-                  <ShieldCheck size={16} />
-                  <span>Status Hak Tonton</span>
-                </div>
-                <p>
-                  Metadata film bersumber dari TMDB API. Pemutar video terintegrasi dengan cuplikan resmi studio dan teknologi HLS aman.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Kolom Kanan: Detail Informasi */}
-          <div className="md:col-span-8 lg:col-span-9 space-y-8">
-            {/* Judul & Tagline */}
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded bg-[#D9A52E]/15 px-2.5 py-0.5 text-xs font-bold text-[#D9A52E] border border-[#D9A52E]/30">
-                  Film
-                </span>
-                {movie.status && (
-                  <span className="rounded bg-[#171717] px-2.5 py-0.5 text-xs font-semibold text-[#A3A3A3] border border-[#292929]">
-                    {movie.status}
-                  </span>
-                )}
-              </div>
-
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#F5F5F5]">
-                {movie.title}
-              </h1>
-
-              {movie.tagline && (
-                <p className="text-sm sm:text-base italic text-[#D9A52E]">
-                  &ldquo;{movie.tagline}&rdquo;
-                </p>
-              )}
-            </div>
-
-            {/* Quick Metrics Bar: Rating, Release, Runtime */}
-            <div className="flex flex-wrap items-center gap-6 rounded-xl border border-[#292929] bg-[#171717]/60 p-4 backdrop-blur-sm text-sm">
-              <div className="flex items-center gap-2">
-                <Star size={20} weight="fill" className="text-[#D9A52E]" />
-                <div>
-                  <div className="font-extrabold text-[#F5F5F5]">
-                    {movie.vote_average ? movie.vote_average.toFixed(1) : "—"} / 10
-                  </div>
-                  <div className="text-[10px] text-[#737373]">
-                    {movie.vote_count ? `${movie.vote_count} ulasan` : "Skor TMDB"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-8 w-[1px] bg-[#292929]" />
-
-              <div className="flex items-center gap-2">
-                <CalendarBlank size={20} className="text-[#A3A3A3]" />
-                <div>
-                  <div className="font-bold text-[#F5F5F5]">{releaseYear}</div>
-                  <div className="text-[10px] text-[#737373]">Tahun Rilis</div>
-                </div>
-              </div>
-
-              {movie.runtime && (
-                <>
-                  <div className="h-8 w-[1px] bg-[#292929]" />
-                  <div className="flex items-center gap-2">
-                    <Clock size={20} className="text-[#A3A3A3]" />
-                    <div>
-                      <div className="font-bold text-[#F5F5F5]">{movie.runtime} Menit</div>
-                      <div className="text-[10px] text-[#737373]">Durasi</div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Genre Pills */}
-            {movie.genres && movie.genres.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#737373]">
-                  Genre
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {movie.genres.map((g) => (
-                    <span
-                      key={g.id}
-                      className="rounded-lg border border-[#292929] bg-[#171717] px-3 py-1 text-xs font-medium text-[#F5F5F5]"
-                    >
-                      {g.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Overview / Sinopsis */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-bold text-[#F5F5F5] flex items-center gap-2">
-                <span className="h-4 w-1 rounded-full bg-[#D9A52E]" />
-                Sinopsis
-              </h3>
-              <p className="text-sm sm:text-base leading-relaxed text-[#A3A3A3]">
-                {movie.overview || "Sinopsis belum tersedia untuk judul ini."}
-              </p>
-            </div>
-
-            {/* Action Bar: Tonton Sekarang & Watchlist */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <a
-                href="#player-section"
-                className="flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-[#D9A52E] px-6 py-2.5 text-sm font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/10 transition hover:bg-[#c49226]"
-              >
-                <Play size={18} weight="fill" />
-                <span>Tonton Sekarang</span>
-              </a>
-
+          {/* =========================================================================
+              KOLOM KIRI: Player, Action Bar, Info Judul, Pemeran, Rekomendasi (~75%)
+              ========================================================================= */}
+          <div className="lg:col-span-8 xl:col-span-9 space-y-5">
+            {/* A. Pemutar Streaming Langsung di Paling Atas */}
+            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-[#222226] bg-[#000000] shadow-2xl">
               <Suspense
                 fallback={
-                  <div className="flex h-11 w-44 items-center justify-center rounded-xl border border-[#292929] bg-[#171717] animate-pulse" />
-                }
-              >
-                <MovieWatchlistSlot
-                  tmdbId={movie.id}
-                  title={movie.title}
-                  posterPath={movie.poster_path}
-                  rating={movie.vote_average}
-                  releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
-                />
-              </Suspense>
-
-              <AddToPlaylistButton
-                tmdbId={movie.id}
-                mediaType="MOVIE"
-                title={movie.title}
-                posterPath={movie.poster_path}
-              />
-            </div>
-
-            {/* 3. Dedicated Streaming Player Section (Adopsi Streambert) */}
-            <div id="player-section" className="space-y-4 pt-6 border-t border-[#292929] scroll-mt-24">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="h-4 w-1 rounded-full bg-[#D9A52E]" />
-                  <h3 className="text-lg font-bold text-[#F5F5F5]">
-                    Pemutar Streaming — {movie.title}
-                  </h3>
-                </div>
-                <span className="rounded bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-2.5 py-0.5 text-xs font-bold text-[#D9A52E]">
-                  Multi-Server Full HD
-                </span>
-              </div>
-
-              <Suspense
-                fallback={
-                  <div className="relative aspect-video w-full rounded-2xl border border-[#292929] bg-[#000000] flex items-center justify-center animate-pulse">
-                    <span className="text-xs text-[#737373]">Memuat pemutar video...</span>
+                  <div className="relative aspect-video w-full rounded-2xl border border-[#222226] bg-[#050505] flex items-center justify-center animate-pulse">
+                    <span className="text-xs text-[#71717A]">Memuat pemutar video...</span>
                   </div>
                 }
               >
@@ -383,154 +225,283 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
               </Suspense>
             </div>
 
-            {/* Informasi & Detail Produksi Lengkap (TMDB) */}
-            <div className="rounded-2xl border border-[#292929] bg-[#141414] p-5 space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-[#D9A52E] flex items-center gap-2">
-                <ShieldCheck size={18} weight="fill" />
-                <span>Informasi & Detail Produksi</span>
-              </h3>
+            {/* B. Action Bar di Bawah Player (Watch Later, Playlist, Share) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 pb-3 border-b border-[#1E1E22]">
+              <div className="flex flex-wrap items-center gap-2">
+                <Suspense
+                  fallback={
+                    <div className="h-8 w-28 rounded-lg bg-[#18181B] animate-pulse" />
+                  }
+                >
+                  <MovieWatchlistSlot
+                    tmdbId={movie.id}
+                    title={movie.title}
+                    posterPath={movie.poster_path}
+                    rating={movie.vote_average}
+                    releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
+                  />
+                </Suspense>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
-                {movie.original_title && movie.original_title !== movie.title && (
-                  <div className="space-y-1">
-                    <span className="text-[#737373] flex items-center gap-1">
-                      <Translate size={14} />
-                      <span>Judul Asli</span>
-                    </span>
-                    <p className="font-semibold text-[#F5F5F5]">{movie.original_title}</p>
-                  </div>
-                )}
+                <AddToPlaylistButton
+                  tmdbId={movie.id}
+                  mediaType="MOVIE"
+                  title={movie.title}
+                  posterPath={movie.poster_path}
+                />
 
-                {movie.status && (
-                  <div className="space-y-1">
-                    <span className="text-[#737373] flex items-center gap-1">
-                      <FilmReel size={14} />
-                      <span>Status Rilis</span>
-                    </span>
-                    <p className="font-semibold text-[#F5F5F5]">{movie.status}</p>
-                  </div>
-                )}
+                <MovieShareButton title={movie.title} />
+              </div>
 
-                {movie.original_language && (
-                  <div className="space-y-1">
-                    <span className="text-[#737373] flex items-center gap-1">
-                      <Globe size={14} />
-                      <span>Bahasa Asli</span>
-                    </span>
-                    <p className="font-semibold text-[#F5F5F5] uppercase">
-                      {movie.original_language}
-                    </p>
-                  </div>
-                )}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="rounded bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-2.5 py-1 text-[11px] font-bold text-[#D9A52E]">
+                  Multi-Server Full HD
+                </span>
+              </div>
+            </div>
 
-                {movie.budget && movie.budget > 0 ? (
-                  <div className="space-y-1">
-                    <span className="text-[#737373] flex items-center gap-1">
-                      <CurrencyDollar size={14} />
-                      <span>Anggaran (Budget)</span>
-                    </span>
-                    <p className="font-semibold text-[#F5F5F5]">
-                      ${movie.budget.toLocaleString("en-US")}
-                    </p>
-                  </div>
-                ) : null}
+            {/* C. Detail Judul & Metadata */}
+            <div className="space-y-3 pt-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#F4F4F5] tracking-tight">
+                {movie.title}
+              </h1>
 
-                {movie.revenue && movie.revenue > 0 ? (
-                  <div className="space-y-1">
-                    <span className="text-[#737373] flex items-center gap-1">
-                      <CurrencyDollar size={14} />
-                      <span>Pendapatan (Revenue)</span>
-                    </span>
-                    <p className="font-semibold text-[#D9A52E]">
-                      ${movie.revenue.toLocaleString("en-US")}
-                    </p>
-                  </div>
+              {/* Rating & Review Stat */}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-[#A1A1AA]">
+                <div className="flex items-center gap-1.5 font-bold text-[#F4F4F5]">
+                  <Star size={16} weight="fill" className="text-[#D9A52E]" />
+                  <span>{movie.vote_average ? movie.vote_average.toFixed(1) : "8.5"}</span>
+                  <span className="text-[#71717A] font-normal">
+                    ({movie.vote_count ? `${movie.vote_count.toLocaleString()} ulasan` : "Skor TMDB"})
+                  </span>
+                </div>
+                <span className="text-[#3F3F46]">•</span>
+                <span className="text-[#D9A52E] font-medium">Beri Nilai</span>
+              </div>
+
+              {/* Badges Bar (TOP, Film Bioskop, Age, Year, Duration) */}
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 font-bold text-emerald-400">
+                  TOP 1 Film Populer
+                </span>
+                <span className="rounded bg-[#D9A52E]/15 border border-[#D9A52E]/30 px-2 py-0.5 font-bold text-[#D9A52E]">
+                  Film Bioskop
+                </span>
+                <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
+                  13+
+                </span>
+                <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
+                  {releaseYear}
+                </span>
+                {movie.runtime ? (
+                  <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
+                    {Math.floor(movie.runtime / 60)}j {movie.runtime % 60}m
+                  </span>
                 ) : null}
               </div>
 
-              {/* Perusahaan Produksi */}
-              {movie.production_companies && movie.production_companies.length > 0 && (
-                <div className="pt-3 border-t border-[#242424] space-y-2">
-                  <span className="text-xs font-semibold text-[#737373] flex items-center gap-1.5">
-                    <Buildings size={14} />
-                    <span>Studio & Rumah Produksi</span>
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {movie.production_companies.map((company) => (
-                      <span
-                        key={company.id}
-                        className="rounded-lg border border-[#292929] bg-[#1a1a1a] px-2.5 py-1 text-[11px] text-[#A3A3A3]"
-                      >
-                        {company.name} {company.origin_country ? `(${company.origin_country})` : ""}
-                      </span>
-                    ))}
-                  </div>
+              {/* Genre Pills */}
+              {movie.genres && movie.genres.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {movie.genres.map((g) => (
+                    <span
+                      key={g.id}
+                      className="rounded-md border border-[#27272A] bg-[#141416] px-2.5 py-1 text-xs text-[#D4D4D8] font-medium"
+                    >
+                      {g.name}
+                    </span>
+                  ))}
                 </div>
               )}
+
+              {/* Sinopsis Expandable */}
+              <div className="pt-2">
+                <MovieSynopsis overview={movie.overview} />
+              </div>
             </div>
 
-            {/* Pemeran Utama (Credits) */}
-            {credits && credits.cast && credits.cast.length > 0 && (
-              <div className="space-y-4 pt-4 border-t border-[#292929]">
-                <h3 className="text-lg font-bold text-[#F5F5F5] flex items-center gap-2">
-                  <Users size={20} className="text-[#D9A52E]" />
-                  Pemeran Utama
+            {/* D. Pemeran & Kru (Format Circular Avatar Sesuai Referensi) */}
+            {allCrewAndCast.length > 0 && (
+              <div className="pt-6 border-t border-[#1E1E22] space-y-3">
+                <h3 className="text-base font-bold text-[#F4F4F5]">
+                  Pemeran & Kru
                 </h3>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {credits.cast.slice(0, 8).map((actor) => {
-                    const profileUrl = getTmdbProfileUrl(actor.profile_path, "w185");
-                    return (
-                      <div
-                        key={actor.id}
-                        className="flex items-center gap-3 rounded-lg border border-[#292929] bg-[#171717] p-2.5"
-                      >
-                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[#292929] bg-[#0A0A0A]">
-                          {profileUrl ? (
-                            <Image
-                              src={profileUrl}
-                              alt={actor.name}
-                              fill
-                              sizes="48px"
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#737373]">
-                              {actor.name.charAt(0)}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="line-clamp-1 text-xs font-semibold text-[#F5F5F5]">
-                            {actor.name}
-                          </p>
-                          <p className="line-clamp-1 text-[11px] text-[#737373]">
-                            {actor.character || "Pemeran"}
-                          </p>
-                        </div>
+                <div className="flex items-start gap-4 sm:gap-6 overflow-x-auto pb-3 pt-1 scrollbar-none">
+                  {allCrewAndCast.map((person) => (
+                    <div
+                      key={`${person.id}-${person.role}`}
+                      className="flex flex-col items-center shrink-0 w-16 sm:w-20 text-center group"
+                    >
+                      <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border-2 border-[#27272A] bg-[#141416] transition-transform duration-300 group-hover:scale-105 group-hover:border-[#D9A52E]">
+                        {person.profileUrl ? (
+                          <Image
+                            src={person.profileUrl}
+                            alt={person.name}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center font-bold text-sm text-[#71717A] bg-gradient-to-b from-[#1F1F24] to-[#121214]">
+                            {person.name.charAt(0)}
+                          </div>
+                        )}
                       </div>
-                    );
-                  })}
+                      <p className="mt-2 text-xs font-semibold text-[#F4F4F5] line-clamp-1 w-full group-hover:text-[#D9A52E] transition-colors">
+                        {person.name}
+                      </p>
+                      <p className="text-[10px] text-[#71717A] line-clamp-1 w-full">
+                        {person.role}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Rekomendasi Film Terkait */}
+            {/* E. Rekomendasi Film Serupa (Recommended Section) */}
             {recommendations.length > 0 && (
-              <div className="space-y-4 pt-6 border-t border-[#292929]">
-                <h3 className="text-xl font-bold text-[#F5F5F5]">
-                  Rekomendasi Film Serupa
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {recommendations.slice(0, 8).map((rec) => (
+              <div className="pt-6 border-t border-[#1E1E22] space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-[#F4F4F5]">
+                    Rekomendasi Serupa
+                  </h3>
+                  <Link
+                    href="/catalog?type=movie"
+                    className="text-xs font-semibold text-[#D9A52E] hover:underline"
+                  >
+                    Lihat Semua &rarr;
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                  {recommendations.slice(0, 12).map((rec) => (
                     <MovieCard key={rec.id} movie={rec} />
                   ))}
                 </div>
               </div>
             )}
           </div>
+
+          {/* =========================================================================
+              KOLOM KANAN: Sidebar VIP Banner & Top 10 Film Populer (~25%)
+              ========================================================================= */}
+          <div className="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-24">
+            
+            {/* 1. Banner VIP Member (Gaya Elegan Sesuai Referensi) */}
+            <div className="relative overflow-hidden rounded-2xl border border-[#D9A52E]/30 bg-gradient-to-br from-[#1C180E] via-[#141416] to-[#0E0E12] p-4 shadow-lg shadow-[#D9A52E]/5">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2 text-[#D9A52E] font-bold text-sm">
+                  <Crown size={18} weight="fill" />
+                  <span>LayarRika VIP Member</span>
+                </div>
+                <span className="rounded bg-[#D9A52E]/20 text-[10px] font-bold text-[#D9A52E] px-2 py-0.5 uppercase tracking-wide">
+                  Eksklusif
+                </span>
+              </div>
+              <p className="mt-2 text-xs text-[#A1A1AA] leading-relaxed">
+                Nonton semua film & episode tanpa batas, kualitas Full HD, dan bebas jeda kuota.
+              </p>
+              <Link
+                href="/pricing"
+                className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] py-2.5 px-3 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <span>Aktifkan VIP Sekarang</span>
+                <span className="text-base leading-none">&rarr;</span>
+              </Link>
+            </div>
+
+            {/* 2. Top 10 Film Populer (Ranking List) */}
+            <div className="rounded-2xl border border-[#1E1E22] bg-[#121215] p-4 space-y-4">
+              <div className="flex items-center gap-2 border-b border-[#1E1E22] pb-3">
+                <Fire size={18} weight="fill" className="text-[#D9A52E]" />
+                <h3 className="text-sm font-bold text-[#F4F4F5] uppercase tracking-wide">
+                  Top 10 Film Populer
+                </h3>
+              </div>
+
+              <div className="space-y-3">
+                {top10Movies.map((m, index) => {
+                  const rank = index + 1;
+                  const isTop1 = rank === 1;
+
+                  if (isTop1) {
+                    return (
+                      <Link
+                        key={m.id}
+                        href={`/movie/${m.id}`}
+                        className="group flex gap-3 rounded-xl border border-[#D9A52E]/30 bg-[#1A1812]/50 p-2.5 transition hover:border-[#D9A52E] hover:bg-[#1A1812]"
+                      >
+                        <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-[#0A0A0A]">
+                          {m.posterPath ? (
+                            <Image
+                              src={m.posterPath}
+                              alt={m.title}
+                              fill
+                              sizes="60px"
+                              className="object-cover group-hover:scale-105 transition-transform"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#71717A]">
+                              1
+                            </div>
+                          )}
+                          <span className="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded bg-[#D9A52E] text-[11px] font-black text-[#0A0A0A]">
+                            1
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex flex-col justify-center">
+                          <span className="text-[10px] font-bold text-[#D9A52E] uppercase">
+                            #1 Paling Populer
+                          </span>
+                          <h4 className="text-xs font-bold text-[#F4F4F5] line-clamp-1 group-hover:text-[#D9A52E] transition-colors">
+                            {m.title}
+                          </h4>
+                          <div className="mt-1 flex items-center gap-2 text-[10px] text-[#A1A1AA]">
+                            <span className="flex items-center gap-1 text-[#D9A52E] font-bold">
+                              <Star size={11} weight="fill" />
+                              {m.rating ? m.rating.toFixed(1) : "—"}
+                            </span>
+                            <span>•</span>
+                            <span>{m.releaseYear || "2026"}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <Link
+                      key={m.id}
+                      href={`/movie/${m.id}`}
+                      className="group flex items-center gap-3 py-1 text-xs transition hover:text-[#D9A52E]"
+                    >
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-[11px] font-bold ${
+                          rank <= 3
+                            ? "bg-[#D9A52E]/15 text-[#D9A52E] font-black"
+                            : "text-[#71717A]"
+                        }`}
+                      >
+                        {rank}
+                      </span>
+                      <span className="min-w-0 truncate text-[#D4D4D8] group-hover:text-[#D9A52E] transition-colors">
+                        {m.title}
+                      </span>
+                      {m.rating && (
+                        <span className="ml-auto shrink-0 flex items-center gap-1 text-[10px] text-[#71717A]">
+                          <Star size={10} weight="fill" className="text-[#D9A52E]" />
+                          {m.rating.toFixed(1)}
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+
         </div>
-      </Container>
+      </div>
     </div>
   );
 }
