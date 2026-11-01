@@ -28,10 +28,10 @@ import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { EmbeddedPlayer } from "@/components/player/EmbeddedPlayer";
 import { MovieShareButton } from "@/components/movie/MovieShareButton";
 import { MovieSynopsis } from "@/components/movie/MovieSynopsis";
+import { VipPromoCard } from "@/components/subscription/VipPromoCard";
 import {
   Star,
   ArrowLeft,
-  Crown,
   Fire,
 } from "@phosphor-icons/react/dist/ssr";
 
@@ -175,6 +175,16 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
   }));
 
   const allCrewAndCast = [...directorEntry, ...castEntries];
+
+  // Sinkronisasi status autentikasi & langganan pengguna
+  await connection();
+  const session = await auth();
+  const userId =
+    session?.user?.id ||
+    (session?.user as { sub?: string } | undefined)?.sub ||
+    null;
+  const subStatus = userId ? await getUserSubscriptionStatus(userId) : null;
+  const isVip = subStatus?.isVip || false;
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-[#F5F5F5] pb-24">
@@ -386,28 +396,8 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
               ========================================================================= */}
           <div className="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-24">
             
-            {/* 1. Banner VIP Member (Gaya Elegan Sesuai Referensi) */}
-            <div className="relative overflow-hidden rounded-2xl border border-[#D9A52E]/30 bg-gradient-to-br from-[#1C180E] via-[#141416] to-[#0E0E12] p-4 shadow-lg shadow-[#D9A52E]/5">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2 text-[#D9A52E] font-bold text-sm">
-                  <Crown size={18} weight="fill" />
-                  <span>LayarRika VIP Member</span>
-                </div>
-                <span className="rounded bg-[#D9A52E]/20 text-[10px] font-bold text-[#D9A52E] px-2 py-0.5 uppercase tracking-wide">
-                  Eksklusif
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-[#A1A1AA] leading-relaxed">
-                Nonton semua film & episode tanpa batas, kualitas Full HD, dan bebas jeda kuota.
-              </p>
-              <Link
-                href="/pricing"
-                className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] py-2.5 px-3 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <span>Aktifkan VIP Sekarang</span>
-                <span className="text-base leading-none">&rarr;</span>
-              </Link>
-            </div>
+            {/* 1. Banner VIP Member (Dinamis: Indikator Aktif jika sudah VIP, atau Tombol Aktifkan jika belum) */}
+            <VipPromoCard isVip={isVip} />
 
             {/* 2. Top 10 Film Populer (Ranking List) */}
             <div className="rounded-2xl border border-[#1E1E22] bg-[#121215] p-4 space-y-4">

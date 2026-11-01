@@ -23,6 +23,7 @@ import { AddToPlaylistButton } from "@/components/playlist/AddToPlaylistButton";
 import { MovieShareButton } from "@/components/movie/MovieShareButton";
 import { MovieSynopsis } from "@/components/movie/MovieSynopsis";
 import { MovieCard } from "@/components/home/MovieCard";
+import { VipPromoCard } from "@/components/subscription/VipPromoCard";
 import { getSeasonEpisodesAction } from "@/app/actions/tv";
 import { checkTvEpisodeAccessAction } from "@/app/actions/subscription";
 import { LoginRequiredModal } from "@/components/auth/LoginRequiredModal";
@@ -450,28 +451,8 @@ export function TvSeasonEpisodeBrowser({
             KOLOM KANAN: Sidebar VIP Banner, Episode Selector, & Top 10 Serial (~25%)
             ========================================================================= */}
         <div className="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-24">
-          {/* 1. Banner VIP Member (Gaya Elegan Sesuai Referensi Gambar) */}
-          <div className="relative overflow-hidden rounded-2xl border border-[#D9A52E]/30 bg-gradient-to-br from-[#1C180E] via-[#141416] to-[#0E0E12] p-4 shadow-lg shadow-[#D9A52E]/5">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2 text-[#D9A52E] font-bold text-sm">
-                <Crown size={18} weight="fill" />
-                <span>LayarRika VIP Member</span>
-              </div>
-              <span className="rounded bg-[#D9A52E]/20 text-[10px] font-bold text-[#D9A52E] px-2 py-0.5 uppercase tracking-wide">
-                Eksklusif
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-[#A1A1AA] leading-relaxed">
-              Nonton semua episode 6+ tanpa batas, kualitas Full HD, dan bebas kuota.
-            </p>
-            <Link
-              href="/pricing"
-              className="mt-3 flex items-center justify-center gap-1.5 w-full rounded-xl bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] py-2.5 px-3 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <span>Buka Akses VIP Sekarang</span>
-              <span className="text-base leading-none">&rarr;</span>
-            </Link>
-          </div>
+          {/* 1. Banner VIP Member (Dinamis: Indikator Aktif jika sudah VIP, atau Tombol Aktifkan jika belum) */}
+          <VipPromoCard isVip={isVip} />
 
           {/* 2. Episode Selector Widget (Desain Grid Angka Elegan Sesuai Gambar Referensi) */}
           <div className="rounded-2xl border border-[#1E1E22] bg-[#121215] p-4 space-y-3.5">
@@ -529,7 +510,8 @@ export function TvSeasonEpisodeBrowser({
                   const isPlaying =
                     activeEpisode?.episode_number === ep.episode_number &&
                     activeEpisode?.season_number === ep.season_number;
-                  const isLocked = !isVip && ep.episode_number >= 6;
+                  const isTvEpisodeVipOnly = ep.episode_number >= 6;
+                  const isLocked = !isVip && isTvEpisodeVipOnly;
 
                   return (
                     <button
@@ -542,6 +524,8 @@ export function TvSeasonEpisodeBrowser({
                           ? "border border-[#D9A52E] bg-[#D9A52E] text-[#0A0A0A] font-black shadow-md shadow-[#D9A52E]/30 scale-105"
                           : isLocked
                           ? "border border-[#27272A] bg-[#141418] text-[#71717A] hover:border-[#D9A52E]/60 hover:text-[#D9A52E]"
+                          : isTvEpisodeVipOnly && isVip
+                          ? "border border-[#D9A52E]/30 bg-[#1A1812]/50 text-[#F5F5F5] hover:border-[#D9A52E]"
                           : "border border-[#27272A] bg-[#18181C] text-[#E4E4E7] hover:border-[#D9A52E]/50 hover:bg-[#202026]"
                       }`}
                     >
@@ -554,6 +538,10 @@ export function TvSeasonEpisodeBrowser({
                         ) : isLocked ? (
                           <span className="flex items-center gap-0.5 text-[#D9A52E]">
                             <LockKey size={9} weight="fill" /> VIP
+                          </span>
+                        ) : isTvEpisodeVipOnly && isVip ? (
+                          <span className="flex items-center gap-0.5 text-[#D9A52E] font-bold">
+                            <Crown size={9} weight="fill" /> VIP
                           </span>
                         ) : (
                           "Free"
