@@ -657,24 +657,26 @@ export function TvSeasonEpisodeBrowser({
             )}
 
             {/* E. KHUSUS MOBILE: VIP Card, Episode Selector, & Top 10 (Ditempatkan di Sini Sesuai Gambar 1 & 2) */}
-            <div className="block lg:hidden space-y-5 pt-5 border-t border-[#1E1E22]">
-              {/* Box Jadwal Rilis & Info Episode Sesuai Gambar Referensi */}
-              <div className="rounded-xl border border-[#D9A52E]/25 bg-gradient-to-r from-[#18150D] to-[#121215] p-3 text-xs text-[#A1A1AA] space-y-1">
-                <div className="flex items-center justify-between font-bold text-[#F4F4F5]">
-                  <span className="flex items-center gap-1.5 text-[#D9A52E]">
-                    <Television size={15} weight="fill" />
-                    Daftar Episode 1–{episodes.length}
-                  </span>
-                  <span className="text-[11px] text-[#71717A] font-medium">
-                    {episodes.length} Episode
-                  </span>
+            <div className="block lg:hidden space-y-4 pt-5 border-t border-[#1E1E22]">
+              {/* Box Jadwal Rilis & Info Episode (Hanya untuk non-VIP) */}
+              {!isVip && (
+                <div className="rounded-xl border border-[#D9A52E]/25 bg-gradient-to-r from-[#18150D] to-[#121215] p-3 text-xs text-[#A1A1AA] space-y-1">
+                  <div className="flex items-center justify-between font-bold text-[#F4F4F5]">
+                    <span className="flex items-center gap-1.5 text-[#D9A52E]">
+                      <Television size={15} weight="fill" />
+                      Daftar Episode 1–{episodes.length}
+                    </span>
+                    <span className="text-[11px] text-[#71717A] font-medium">
+                      {episodes.length} Episode
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#8E8E93] leading-relaxed">
+                    VIP: Nonton semua episode 6+ tanpa batas & bebas jeda. Non-VIP: Episode 1–5 Gratis.
+                  </p>
                 </div>
-                <p className="text-[11px] text-[#8E8E93] leading-relaxed">
-                  VIP: Nonton semua episode 6+ tanpa batas & bebas jeda. Non-VIP: Episode 1–5 Gratis.
-                </p>
-              </div>
+              )}
 
-              {/* Banner VIP Member */}
+              {/* Banner VIP Member Minimalis */}
               <VipPromoCard isVip={isVip} />
 
               {/* Episode Numbered Grid */}
