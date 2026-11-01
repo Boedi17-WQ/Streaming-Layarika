@@ -494,153 +494,7 @@ export function EmbeddedPlayer({
 
   return (
     <div className="space-y-3 sm:space-y-4 rounded-none sm:rounded-3xl border-0 sm:border border-white/10 bg-transparent sm:bg-gradient-to-b sm:from-[#141414] sm:to-[#0c0c0c] p-0 sm:p-6 shadow-none sm:shadow-2xl backdrop-blur-none sm:backdrop-blur-xl">
-      {/* 1. Header Bar: Sleek Floating Glass Capsule Dock & Status Akses (Mobile Responsive) */}
-      <div className="px-4 sm:px-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2.5 sm:pb-3">
-        {/* Floating Glass Capsule Dock Pemilihan Server (Scrollable di HP kecil) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none max-w-full">
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-[#121212]/90 p-1 shadow-inner shadow-black/80 backdrop-blur-md shrink-0">
-            {/* 1. Trailer Resmi */}
-            <button
-              type="button"
-              onClick={() => handleSelectProvider("trailer")}
-              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                activeProvider === "trailer"
-                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
-                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
-              }`}
-            >
-              <FilmStrip size={14} weight={activeProvider === "trailer" ? "fill" : "regular"} />
-              <span>Trailer</span>
-            </button>
-
-            {/* 2. Server 1 (MultiEmbed) */}
-            <button
-              type="button"
-              onClick={() => handleSelectProvider("multiembed")}
-              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                activeProvider === "multiembed"
-                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
-                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
-              }`}
-            >
-              <span className="relative flex h-2 w-2">
-                {activeProvider === "multiembed" && (
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#0A0A0A] opacity-75 animate-ping" />
-                )}
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    activeProvider === "multiembed" ? "bg-[#0A0A0A]" : "bg-emerald-400"
-                  }`}
-                />
-              </span>
-              <span>Server 1</span>
-              <span
-                className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                  activeProvider === "multiembed" ? "bg-black/20 text-[#0A0A0A]" : "bg-white/10 text-[#737373]"
-                }`}
-              >
-                HD
-              </span>
-            </button>
-
-            {/* 3. Server 2 (VidSrc) */}
-            <button
-              type="button"
-              onClick={() => handleSelectProvider("vidsrc")}
-              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                activeProvider === "vidsrc"
-                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
-                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
-              }`}
-            >
-              <span className="relative flex h-2 w-2">
-                {activeProvider === "vidsrc" && (
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#0A0A0A] opacity-75 animate-ping" />
-                )}
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    activeProvider === "vidsrc" ? "bg-[#0A0A0A]" : "bg-emerald-400"
-                  }`}
-                />
-              </span>
-              <span>Server 2</span>
-              <span
-                className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                  activeProvider === "vidsrc" ? "bg-black/20 text-[#0A0A0A]" : "bg-white/10 text-[#737373]"
-                }`}
-              >
-                Multi
-              </span>
-            </button>
-
-            {/* 4. Demo HLS (Cadangan / Developer Open Source) */}
-            <button
-              type="button"
-              onClick={() => handleSelectProvider("demo")}
-              title="Media Uji Demo Terbuka (Blender Foundation)"
-              className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all ${
-                activeProvider === "demo"
-                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
-                  : "text-[#737373] hover:text-[#A3A3A3] hover:bg-white/5"
-              }`}
-            >
-              <span>Demo</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Status Akses & Tombol Aksi Kanan Rapi */}
-        <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
-          {/* Indikator Kuota Film (Free vs VIP) — Tampilan Horizontal Bersih */}
-          {mediaType === "MOVIE" && movieEntitlement && (
-            movieEntitlement.isVip ? (
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-3 py-1.5 text-xs font-bold text-[#D9A52E] shadow-sm whitespace-nowrap">
-                <Crown size={14} weight="fill" />
-                <span>VIP Bebas Kuota</span>
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-[#A3A3A3] whitespace-nowrap">
-                <Clock size={13} className="text-[#D9A52E]" />
-                <span>
-                  {movieEntitlement.remainingSeconds !== null
-                    ? `Sisa ${Math.max(0, Math.ceil(movieEntitlement.remainingSeconds / 60))}m`
-                    : "Kuota 60m"}
-                </span>
-              </div>
-            )
-          )}
-
-          {/* Tombol Episode Selanjutnya (Khusus Serial TV) */}
-          {mediaType === "TV" && hasNextEpisode && onNextEpisode && (
-            <button
-              type="button"
-              onClick={onNextEpisode}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E] bg-gradient-to-r from-[#D9A52E] to-[#e5b342] px-3.5 py-1.5 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/20 transition-all hover:scale-105 active:scale-95"
-            >
-              <span>Eps Selanjutnya</span>
-              <FastForward size={13} weight="fill" />
-            </button>
-          )}
-
-          {/* Tombol Tandai Selesai (Kapsul Modern Elegan) */}
-          <button
-            type="button"
-            onClick={handleMarkCompleted}
-            disabled={isCompleted || isMarkingCompleted}
-            title={isCompleted ? "Telah ditandai selesai ditonton" : "Tandai judul ini telah selesai ditonton"}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-              isCompleted
-                ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 cursor-default"
-                : "border border-white/10 bg-white/5 text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5]"
-            }`}
-          >
-            <CheckCircle size={14} weight={isCompleted ? "fill" : "regular"} className={isCompleted ? "text-emerald-400" : "text-[#737373]"} />
-            <span className="hidden sm:inline">{isCompleted ? "Selesai" : "Tandai Selesai"}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Container Video Player (Edge-to-edge di Mobile Sesuai Referensi) */}
+      {/* 1. Container Video Player (Edge-to-edge di Mobile Sesuai Referensi) */}
       <div
         ref={containerRef}
         className={`relative aspect-video w-full overflow-hidden rounded-none sm:rounded-2xl border-0 sm:border border-white/10 bg-[#000000] shadow-2xl transition-all ${
@@ -851,6 +705,152 @@ export function EmbeddedPlayer({
         )}
       </div>
 
+      {/* 2. Toolbar Fitur Player di Bawah Layar: Pilihan Server & Status Akses (Mobile & Desktop) */}
+      <div className="px-4 sm:px-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2.5 sm:pb-3">
+        {/* Floating Glass Capsule Dock Pemilihan Server (Scrollable di HP kecil) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none max-w-full">
+          <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-[#121212]/90 p-1 shadow-inner shadow-black/80 backdrop-blur-md shrink-0">
+            {/* 1. Trailer Resmi */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider("trailer")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                activeProvider === "trailer"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
+              }`}
+            >
+              <FilmStrip size={14} weight={activeProvider === "trailer" ? "fill" : "regular"} />
+              <span>Trailer</span>
+            </button>
+
+            {/* 2. Server 1 (MultiEmbed) */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider("multiembed")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                activeProvider === "multiembed"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                {activeProvider === "multiembed" && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#0A0A0A] opacity-75 animate-ping" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    activeProvider === "multiembed" ? "bg-[#0A0A0A]" : "bg-emerald-400"
+                  }`}
+                />
+              </span>
+              <span>Server 1</span>
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                  activeProvider === "multiembed" ? "bg-black/20 text-[#0A0A0A]" : "bg-white/10 text-[#737373]"
+                }`}
+              >
+                HD
+              </span>
+            </button>
+
+            {/* 3. Server 2 (VidSrc) */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider("vidsrc")}
+              className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                activeProvider === "vidsrc"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5"
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                {activeProvider === "vidsrc" && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#0A0A0A] opacity-75 animate-ping" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    activeProvider === "vidsrc" ? "bg-[#0A0A0A]" : "bg-emerald-400"
+                  }`}
+                />
+              </span>
+              <span>Server 2</span>
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                  activeProvider === "vidsrc" ? "bg-black/20 text-[#0A0A0A]" : "bg-white/10 text-[#737373]"
+                }`}
+              >
+                Multi
+              </span>
+            </button>
+
+            {/* 4. Demo HLS (Cadangan / Developer Open Source) */}
+            <button
+              type="button"
+              onClick={() => handleSelectProvider("demo")}
+              title="Media Uji Demo Terbuka (Blender Foundation)"
+              className={`flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+                activeProvider === "demo"
+                  ? "bg-gradient-to-r from-[#D9A52E] via-[#e5b342] to-[#D9A52E] text-[#0A0A0A] font-bold shadow-[0_0_12px_rgba(217,165,46,0.35)]"
+                  : "text-[#737373] hover:text-[#A3A3A3] hover:bg-white/5"
+              }`}
+            >
+              <span>Demo</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Status Akses & Tombol Aksi Kanan Rapi */}
+        <div className="flex items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto">
+          {/* Indikator Kuota Film (Free vs VIP) — Tampilan Horizontal Bersih */}
+          {mediaType === "MOVIE" && movieEntitlement && (
+            movieEntitlement.isVip ? (
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-3 py-1.5 text-xs font-bold text-[#D9A52E] shadow-sm whitespace-nowrap">
+                <Crown size={14} weight="fill" />
+                <span>VIP Bebas Kuota</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-[#A3A3A3] whitespace-nowrap">
+                <Clock size={13} className="text-[#D9A52E]" />
+                <span>
+                  {movieEntitlement.remainingSeconds !== null
+                    ? `Sisa ${Math.max(0, Math.ceil(movieEntitlement.remainingSeconds / 60))}m`
+                    : "Kuota 60m"}
+                </span>
+              </div>
+            )
+          )}
+
+          {/* Tombol Episode Selanjutnya (Khusus Serial TV) */}
+          {mediaType === "TV" && hasNextEpisode && onNextEpisode && (
+            <button
+              type="button"
+              onClick={onNextEpisode}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#D9A52E] bg-gradient-to-r from-[#D9A52E] to-[#e5b342] px-3.5 py-1.5 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/20 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <span>Eps Selanjutnya</span>
+              <FastForward size={13} weight="fill" />
+            </button>
+          )}
+
+          {/* Tombol Tandai Selesai (Kapsul Modern Elegan) */}
+          <button
+            type="button"
+            onClick={handleMarkCompleted}
+            disabled={isCompleted || isMarkingCompleted}
+            title={isCompleted ? "Telah ditandai selesai ditonton" : "Tandai judul ini telah selesai ditonton"}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+              isCompleted
+                ? "border border-emerald-500/40 bg-emerald-500/15 text-emerald-400 cursor-default"
+                : "border border-white/10 bg-white/5 text-[#A3A3A3] hover:border-[#D9A52E]/50 hover:text-[#F5F5F5] cursor-pointer"
+            }`}
+          >
+            <CheckCircle size={14} weight={isCompleted ? "fill" : "regular"} className={isCompleted ? "text-emerald-400" : "text-[#737373]"} />
+            <span className="hidden sm:inline">{isCompleted ? "Selesai" : "Tandai Selesai"}</span>
+          </button>
+        </div>
+      </div>
+
       {/* 3. Bar Informasi Kepatuhan Keamanan & Panduan Subtitle */}
       <div className="space-y-2 px-1">
         <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-[#737373]">
@@ -898,7 +898,7 @@ export function EmbeddedPlayer({
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-[#D9A52E] shrink-0 font-medium">
               <CornersOut size={13} weight="bold" />
-              <span>Gunakan tombol Layar Penuh di atas video untuk mode bioskop</span>
+              <span>Gunakan kontrol pemutar bawaan untuk mode layar penuh</span>
             </div>
           </div>
         )}
