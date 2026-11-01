@@ -660,21 +660,6 @@ export function EmbeddedPlayer({
             <CheckCircle size={14} weight={isCompleted ? "fill" : "regular"} className={isCompleted ? "text-emerald-400" : "text-[#737373]"} />
             <span className="hidden sm:inline">{isCompleted ? "Selesai" : "Tandai Selesai"}</span>
           </button>
-
-          {/* Tombol Layar Penuh Header (Fullscreen Toggle) */}
-          <button
-            type="button"
-            onClick={toggleFullscreen}
-            title={isFullscreen ? "Keluar Layar Penuh (Esc)" : "Putar Layar Penuh (Fullscreen)"}
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-[#A3A3A3] transition-all hover:border-[#D9A52E]/50 hover:text-[#F5F5F5] active:scale-95 cursor-pointer"
-          >
-            {isFullscreen ? (
-              <CornersIn size={14} weight="bold" className="text-[#D9A52E]" />
-            ) : (
-              <CornersOut size={14} weight="bold" className="text-[#D9A52E]" />
-            )}
-            <span className="hidden sm:inline">{isFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}</span>
-          </button>
         </div>
       </div>
 
