@@ -280,8 +280,8 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                 <div className="flex items-center gap-1.5 font-bold text-[#F4F4F5]">
                   <Star size={16} weight="fill" className="text-[#D9A52E]" />
                   <span>{movie.vote_average ? movie.vote_average.toFixed(1) : "8.5"}</span>
-                  <span className="text-[#71717A] font-normal">
-                    ({movie.vote_count ? `${movie.vote_count.toLocaleString()} ulasan` : "Skor TMDB"})
+                  <span className="text-[#71717A] font-normal" suppressHydrationWarning>
+                    ({movie.vote_count ? `${movie.vote_count.toLocaleString("id-ID")} ulasan` : "Skor TMDB"})
                   </span>
                 </div>
                 <span className="text-[#3F3F46]">•</span>
