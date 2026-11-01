@@ -524,9 +524,9 @@ export function EmbeddedPlayer({
       : null;
 
   return (
-    <div className="space-y-4 rounded-3xl border border-white/10 bg-gradient-to-b from-[#141414] to-[#0c0c0c] p-4 sm:p-6 shadow-2xl backdrop-blur-xl">
+    <div className="space-y-3 sm:space-y-4 rounded-none sm:rounded-3xl border-0 sm:border border-white/10 bg-transparent sm:bg-gradient-to-b sm:from-[#141414] sm:to-[#0c0c0c] p-0 sm:p-6 shadow-none sm:shadow-2xl backdrop-blur-none sm:backdrop-blur-xl">
       {/* 1. Header Bar: Sleek Floating Glass Capsule Dock & Status Akses (Mobile Responsive) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-3">
+      <div className="px-4 sm:px-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-2.5 sm:pb-3">
         {/* Floating Glass Capsule Dock Pemilihan Server (Scrollable di HP kecil) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none max-w-full">
           <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-[#121212]/90 p-1 shadow-inner shadow-black/80 backdrop-blur-md shrink-0">
@@ -671,10 +671,10 @@ export function EmbeddedPlayer({
         </div>
       </div>
 
-      {/* 2. Container Video Player */}
+      {/* 2. Container Video Player (Edge-to-edge di Mobile Sesuai Referensi) */}
       <div
         ref={containerRef}
-        className={`relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-[#000000] shadow-2xl transition-all ${
+        className={`relative aspect-video w-full overflow-hidden rounded-none sm:rounded-2xl border-0 sm:border border-white/10 bg-[#000000] shadow-2xl transition-all ${
           isFullscreen ? "fixed inset-0 z-50 !aspect-auto !h-screen !w-screen !rounded-none !border-0" : ""
         }`}
       >

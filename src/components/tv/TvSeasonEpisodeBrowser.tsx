@@ -286,13 +286,211 @@ export function TvSeasonEpisodeBrowser({
     })),
   ];
 
+  // Helper Widget: Episode Selector Grid (Digunakan di Mobile & Desktop Sidebar)
+  const renderEpisodeSelector = () => (
+    <div className="rounded-2xl border border-[#1E1E22] bg-[#121215] p-4 space-y-3.5">
+      {/* Header & Season Tabs */}
+      <div className="space-y-2 border-b border-[#1E1E22] pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Television size={18} className="text-[#D9A52E]" weight="fill" />
+            <h3 className="text-sm font-bold text-[#F4F4F5] uppercase tracking-wide">
+              Pilih Episode
+            </h3>
+          </div>
+          <span className="text-[11px] text-[#71717A]">
+            {episodes.length} Episode
+          </span>
+        </div>
+
+        {/* Horizontal Season Pills if multiple seasons */}
+        {seasonsToDisplay.length > 1 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-none">
+            {seasonsToDisplay.map((s) => {
+              const isSeasonActive = s.season_number === activeSeasonNumber;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleSelectSeason(s.season_number)}
+                  className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
+                    isSeasonActive
+                      ? "bg-[#D9A52E] text-[#0A0A0A] shadow-sm shadow-[#D9A52E]/20 font-bold"
+                      : "bg-[#18181C] text-[#A1A1AA] hover:bg-[#222228] hover:text-[#F4F4F5] border border-[#27272A]"
+                  }`}
+                >
+                  {s.name || `Musim ${s.season_number}`}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Episode Numbered Grid (1, 2, 3, 4, 5, 6, 7...) */}
+      {isLoadingSeason ? (
+        <div className="flex h-36 flex-col items-center justify-center rounded-xl bg-[#0E0E12] border border-[#1E1E22]">
+          <Spinner size={24} className="animate-spin text-[#D9A52E]" />
+          <span className="mt-2 text-xs text-[#71717A]">Memuat episode...</span>
+        </div>
+      ) : episodes.length === 0 ? (
+        <div className="p-4 text-center text-xs text-[#71717A]">
+          Belum ada episode di musim ini.
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
+          {episodes.map((ep) => {
+            const isPlaying =
+              activeEpisode?.episode_number === ep.episode_number &&
+              activeEpisode?.season_number === ep.season_number;
+            const isTvEpisodeVipOnly = ep.episode_number >= 6;
+            const isLocked = !isVip && isTvEpisodeVipOnly;
+
+            return (
+              <button
+                key={ep.id}
+                type="button"
+                onClick={() => handleSelectEpisode(ep)}
+                title={ep.name ? `Eps ${ep.episode_number}: ${ep.name}` : `Episode ${ep.episode_number}`}
+                className={`group relative flex flex-col items-center justify-center rounded-xl py-2 px-1 transition-all text-center cursor-pointer ${
+                  isPlaying
+                    ? "border border-[#D9A52E] bg-[#D9A52E] text-[#0A0A0A] font-black shadow-md shadow-[#D9A52E]/30 scale-105"
+                    : isLocked
+                    ? "border border-[#27272A] bg-[#141418] text-[#71717A] hover:border-[#D9A52E]/60 hover:text-[#D9A52E]"
+                    : isTvEpisodeVipOnly && isVip
+                    ? "border border-[#D9A52E]/30 bg-[#1A1812]/50 text-[#F5F5F5] hover:border-[#D9A52E]"
+                    : "border border-[#27272A] bg-[#18181C] text-[#E4E4E7] hover:border-[#D9A52E]/50 hover:bg-[#202026]"
+                }`}
+              >
+                <span className="text-sm font-bold leading-none">
+                  {ep.episode_number}
+                </span>
+                <span className="mt-1 text-[9px] uppercase tracking-wider font-semibold">
+                  {isPlaying ? (
+                    "Putar"
+                  ) : isLocked ? (
+                    <span className="flex items-center gap-0.5 text-[#D9A52E]">
+                      <LockKey size={9} weight="fill" /> VIP
+                    </span>
+                  ) : isTvEpisodeVipOnly && isVip ? (
+                    <span className="flex items-center gap-0.5 text-[#D9A52E] font-bold">
+                      <Crown size={9} weight="fill" /> VIP
+                    </span>
+                  ) : (
+                    "Free"
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  // Helper Widget: Top 10 Serial Populer
+  const renderTop10List = () => (
+    top10Series.length > 0 ? (
+      <div className="rounded-2xl border border-[#1E1E22] bg-[#121215] p-4 space-y-4">
+        <div className="flex items-center gap-2 border-b border-[#1E1E22] pb-3">
+          <Fire size={18} weight="fill" className="text-[#D9A52E]" />
+          <h3 className="text-sm font-bold text-[#F4F4F5] uppercase tracking-wide">
+            Top 10 Serial Populer
+          </h3>
+        </div>
+
+        <div className="space-y-3">
+          {top10Series.map((s, index) => {
+            const rank = index + 1;
+            const isTop1 = rank === 1;
+
+            if (isTop1) {
+              return (
+                <Link
+                  key={s.id}
+                  href={`/tv/${s.id}`}
+                  className="group flex gap-3 rounded-xl border border-[#D9A52E]/30 bg-[#1A1812]/50 p-2.5 transition hover:border-[#D9A52E] hover:bg-[#1A1812]"
+                >
+                  <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-[#0A0A0A]">
+                    {s.posterPath ? (
+                      <Image
+                        src={s.posterPath}
+                        alt={s.title}
+                        fill
+                        unoptimized
+                        sizes="60px"
+                        className="object-cover group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#71717A]">
+                        1
+                      </div>
+                    )}
+                    <span className="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded bg-[#D9A52E] text-[11px] font-black text-[#0A0A0A]">
+                      1
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex flex-col justify-center">
+                    <span className="text-[10px] font-bold text-[#D9A52E] uppercase">
+                      #1 Paling Populer
+                    </span>
+                    <h4 className="text-xs font-bold text-[#F4F4F5] line-clamp-1 group-hover:text-[#D9A52E] transition-colors">
+                      {s.title}
+                    </h4>
+                    <div className="mt-1 flex items-center gap-2 text-[10px] text-[#A1A1AA]">
+                      <span className="flex items-center gap-1 text-[#D9A52E] font-bold">
+                        <Star size={11} weight="fill" />
+                        {s.rating ? s.rating.toFixed(1) : "—"}
+                      </span>
+                      <span>•</span>
+                      <span>{s.releaseYear || "2026"}</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            }
+
+            return (
+              <Link
+                key={s.id}
+                href={`/tv/${s.id}`}
+                className="group flex items-center gap-3 py-1 text-xs transition hover:text-[#D9A52E]"
+              >
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-[11px] font-bold ${
+                    rank <= 3
+                      ? "bg-[#D9A52E]/15 text-[#D9A52E] font-black"
+                      : "text-[#71717A]"
+                  }`}
+                >
+                  {rank}
+                </span>
+                <span className="min-w-0 truncate text-[#D4D4D8] group-hover:text-[#D9A52E] transition-colors">
+                  {s.title}
+                </span>
+                {s.rating && (
+                  <span className="ml-auto shrink-0 flex items-center gap-1 text-[10px] text-[#71717A]">
+                    <Star size={10} weight="fill" className="text-[#D9A52E]" />
+                    {s.rating.toFixed(1)}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    ) : null
+  );
+
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+    <div className="mx-auto w-full max-w-[1440px] px-0 sm:px-6 lg:px-8 pt-0 sm:pt-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* =========================================================================
-            KOLOM KIRI: Player, Action Bar, Info Serial, Pemeran, Rekomendasi (~75%)
+            KOLOM KIRI: Player (Edge-to-Edge Mobile), Action Bar, Metadata, Pemeran,
+            (DI MOBILE: VIP Card + Episode Selector + Top 10),
+            Rekomendasi Serupa (~75%)
             ========================================================================= */}
-        <div className="lg:col-span-8 xl:col-span-9 space-y-5">
+        <div className="lg:col-span-8 xl:col-span-9 space-y-4 sm:space-y-5">
           {/* A. Pemutar Streaming Langsung di Paling Atas */}
           <div className="w-full">
             <EmbeddedPlayer
@@ -312,366 +510,211 @@ export function TvSeasonEpisodeBrowser({
             />
           </div>
 
-          {/* B. Action Bar di Bawah Player (Watchlist, Playlist, Share) */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 pb-3 border-b border-[#1E1E22]">
-            <div className="flex flex-wrap items-center gap-2">
-              <WatchlistButton
-                tmdbId={seriesId}
-                mediaType="TV"
-                title={seriesName}
-                posterPath={posterPath}
-                rating={voteAverage}
-                releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
-                initialInWatchlist={initialInWatchlist}
-              />
+          {/* Wrapper Konten Berjarak Padding Rapi di Bawah Player */}
+          <div className="px-4 sm:px-0 space-y-5">
+            {/* B. Action Bar di Bawah Player (Watchlist, Playlist, Share) */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 pb-3 border-b border-[#1E1E22]">
+              <div className="flex flex-wrap items-center gap-2">
+                <WatchlistButton
+                  tmdbId={seriesId}
+                  mediaType="TV"
+                  title={seriesName}
+                  posterPath={posterPath}
+                  rating={voteAverage}
+                  releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
+                  initialInWatchlist={initialInWatchlist}
+                />
 
-              <AddToPlaylistButton
-                tmdbId={seriesId}
-                mediaType="TV"
-                title={seriesName}
-                posterPath={posterPath}
-              />
+                <AddToPlaylistButton
+                  tmdbId={seriesId}
+                  mediaType="TV"
+                  title={seriesName}
+                  posterPath={posterPath}
+                />
 
-              <MovieShareButton title={seriesName} />
-            </div>
+                <MovieShareButton title={seriesName} />
+              </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              <span className="rounded bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-2.5 py-1 text-[11px] font-bold text-[#D9A52E]">
-                Stream Multi-Server
-              </span>
-            </div>
-          </div>
-
-          {/* C. Detail Judul & Metadata Serial */}
-          <div className="space-y-3 pt-1">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#F4F4F5] tracking-tight">
-                {seriesName}
-              </h1>
-              {activeEpisode && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-[#D9A52E]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#D9A52E] animate-pulse" />
-                  <span>
-                    Sedang Memutar: Musim {activeEpisode.season_number} • Episode {activeEpisode.episode_number}{" "}
-                    {activeEpisode.name ? `— ${activeEpisode.name}` : ""}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Rating & Review Stat */}
-            <div className="flex flex-wrap items-center gap-3 text-xs text-[#A1A1AA]">
-              <div className="flex items-center gap-1.5 font-bold text-[#F4F4F5]">
-                <Star size={16} weight="fill" className="text-[#D9A52E]" />
-                <span>{voteAverage ? voteAverage.toFixed(1) : "8.5"}</span>
-                <span className="text-[#71717A] font-normal" suppressHydrationWarning>
-                  ({voteCount ? `${voteCount.toLocaleString("id-ID")} ulasan` : "Skor TMDB"})
+              <div className="flex items-center gap-2 text-xs">
+                <span className="rounded bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-2.5 py-1 text-[11px] font-bold text-[#D9A52E]">
+                  Stream Multi-Server
                 </span>
               </div>
-              <span className="text-[#3F3F46]">•</span>
-              <span className="text-[#D9A52E] font-medium">Beri Nilai</span>
             </div>
 
-            {/* Badges Bar (TOP, Serial TV, Age, Year, Total Content) */}
-            <div className="flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 font-bold text-emerald-400">
-                TOP 1 Serial Populer
-              </span>
-              <span className="rounded bg-[#D9A52E]/15 border border-[#D9A52E]/30 px-2 py-0.5 font-bold text-[#D9A52E]">
-                Serial TV
-              </span>
-              <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
-                13+
-              </span>
-              <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
-                {releaseYear}
-              </span>
-              <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
-                Musim {activeSeasonNumber} • {episodes.length} Episode
-              </span>
-            </div>
+            {/* C. Detail Judul & Metadata Serial (Format Mobile & Desktop Sesuai Gambar Referensi) */}
+            <div className="space-y-2.5 pt-1">
+              <div className="space-y-1">
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-[#F4F4F5] tracking-tight">
+                    {seriesName}
+                  </h1>
+                  {activeEpisode && (
+                    <span className="text-sm sm:text-xl font-bold text-[#D9A52E] inline-flex items-center gap-1">
+                      <span className="text-[#71717A]">›</span> Episode {activeEpisode.episode_number}
+                    </span>
+                  )}
+                </div>
+                {activeEpisode?.name && (
+                  <p className="text-xs text-[#A1A1AA]">
+                    {activeEpisode.name}
+                  </p>
+                )}
+              </div>
 
-            {/* Genre Pills */}
-            {genres && genres.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {genres.map((g) => (
-                  <span
-                    key={g.id}
-                    className="rounded-md border border-[#27272A] bg-[#141416] px-2.5 py-1 text-xs text-[#D4D4D8] font-medium"
-                  >
-                    {g.name}
+              {/* Rating & Review Stat */}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-[#A1A1AA]">
+                <div className="flex items-center gap-1.5 font-bold text-[#F4F4F5]">
+                  <Star size={16} weight="fill" className="text-[#D9A52E]" />
+                  <span className="text-[#D9A52E] font-bold">{voteAverage ? voteAverage.toFixed(1) : "8.5"}</span>
+                  <span className="text-[#71717A] font-normal" suppressHydrationWarning>
+                    ({voteCount ? `${voteCount.toLocaleString("id-ID")} ulasan` : "Skor TMDB"})
                   </span>
-                ))}
+                </div>
+                <span className="text-[#3F3F46]">•</span>
+                <span className="text-[#D9A52E] font-medium">Beri Nilai</span>
+              </div>
+
+              {/* Badges Bar (TOP, Serial TV, Age, Year) */}
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 font-bold text-emerald-400">
+                  TOP 1 Serial Populer
+                </span>
+                <span className="rounded bg-[#D9A52E]/15 border border-[#D9A52E]/30 px-2 py-0.5 font-bold text-[#D9A52E]">
+                  Serial TV
+                </span>
+                <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
+                  13+
+                </span>
+                <span className="rounded bg-[#1C1C20] border border-[#27272A] px-2 py-0.5 font-semibold text-[#A1A1AA]">
+                  {releaseYear}
+                </span>
+              </div>
+
+              {/* Status Total Episode */}
+              <div className="text-xs text-[#A1A1AA]">
+                Musim {activeSeasonNumber} • Total {episodes.length} Episode
+              </div>
+
+              {/* Genre Pills */}
+              {genres && genres.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {genres.map((g) => (
+                    <span
+                      key={g.id}
+                      className="rounded-md border border-[#27272A] bg-[#141416] px-2.5 py-1 text-xs text-[#D4D4D8] font-medium"
+                    >
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Sinopsis Expandable */}
+              <div className="pt-1">
+                <MovieSynopsis overview={overview} />
+              </div>
+            </div>
+
+            {/* D. Pemeran & Kru (Format Circular Avatar Sesuai Desain Movie & Referensi) */}
+            {allCrewAndCast.length > 0 && (
+              <div className="pt-5 border-t border-[#1E1E22] space-y-3">
+                <h3 className="text-base font-bold text-[#F4F4F5]">
+                  Pemeran & Kru
+                </h3>
+                <div className="flex items-start gap-4 sm:gap-6 overflow-x-auto pb-3 pt-1 scrollbar-none">
+                  {allCrewAndCast.map((person) => (
+                    <div
+                      key={`${person.id}-${person.role}`}
+                      className="flex flex-col items-center shrink-0 w-16 sm:w-20 text-center group"
+                    >
+                      <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border-2 border-[#27272A] bg-[#141416] transition-transform duration-300 group-hover:scale-105 group-hover:border-[#D9A52E]">
+                        {person.profileUrl ? (
+                          <Image
+                            src={person.profileUrl}
+                            alt={person.name}
+                            fill
+                            unoptimized
+                            sizes="80px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center font-bold text-sm text-[#71717A] bg-gradient-to-b from-[#1F1F24] to-[#121214]">
+                            {person.name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-2 text-xs font-semibold text-[#F4F4F5] line-clamp-1 w-full group-hover:text-[#D9A52E] transition-colors">
+                        {person.name}
+                      </p>
+                      <p className="text-[10px] text-[#71717A] line-clamp-1 w-full">
+                        {person.role}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Sinopsis Expandable */}
-            <div className="pt-2">
-              <MovieSynopsis overview={overview} />
-            </div>
-          </div>
+            {/* E. KHUSUS MOBILE: VIP Card, Episode Selector, & Top 10 (Ditempatkan di Sini Sesuai Gambar 1 & 2) */}
+            <div className="block lg:hidden space-y-5 pt-5 border-t border-[#1E1E22]">
+              {/* Box Jadwal Rilis & Info Episode Sesuai Gambar Referensi */}
+              <div className="rounded-xl border border-[#D9A52E]/25 bg-gradient-to-r from-[#18150D] to-[#121215] p-3 text-xs text-[#A1A1AA] space-y-1">
+                <div className="flex items-center justify-between font-bold text-[#F4F4F5]">
+                  <span className="flex items-center gap-1.5 text-[#D9A52E]">
+                    <Television size={15} weight="fill" />
+                    Daftar Episode 1–{episodes.length}
+                  </span>
+                  <span className="text-[11px] text-[#71717A] font-medium">
+                    {episodes.length} Episode
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#8E8E93] leading-relaxed">
+                  VIP: Nonton semua episode 6+ tanpa batas & bebas jeda. Non-VIP: Episode 1–5 Gratis.
+                </p>
+              </div>
 
-          {/* D. Pemeran & Kru (Format Circular Avatar Sesuai Desain Movie & Referensi) */}
-          {allCrewAndCast.length > 0 && (
-            <div className="pt-6 border-t border-[#1E1E22] space-y-3">
-              <h3 className="text-base font-bold text-[#F4F4F5]">
-                Pemeran & Kru
-              </h3>
-              <div className="flex items-start gap-4 sm:gap-6 overflow-x-auto pb-3 pt-1 scrollbar-none">
-                {allCrewAndCast.map((person) => (
-                  <div
-                    key={`${person.id}-${person.role}`}
-                    className="flex flex-col items-center shrink-0 w-16 sm:w-20 text-center group"
+              {/* Banner VIP Member */}
+              <VipPromoCard isVip={isVip} />
+
+              {/* Episode Numbered Grid */}
+              {renderEpisodeSelector()}
+
+              {/* Top 10 Serial Populer */}
+              {renderTop10List()}
+            </div>
+
+            {/* F. Rekomendasi Serial Serupa (Recommended Section di Bawah Episode pada Mobile) */}
+            {recommendations.length > 0 && (
+              <div className="pt-6 border-t border-[#1E1E22] space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-[#F4F4F5]">
+                    Rekomendasi Serupa
+                  </h3>
+                  <Link
+                    href="/catalog?type=tv"
+                    className="text-xs font-semibold text-[#D9A52E] hover:underline"
                   >
-                    <div className="relative h-16 w-16 sm:h-20 sm:w-20 overflow-hidden rounded-full border-2 border-[#27272A] bg-[#141416] transition-transform duration-300 group-hover:scale-105 group-hover:border-[#D9A52E]">
-                      {person.profileUrl ? (
-                        <Image
-                          src={person.profileUrl}
-                          alt={person.name}
-                          fill
-                          unoptimized
-                          sizes="80px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center font-bold text-sm text-[#71717A] bg-gradient-to-b from-[#1F1F24] to-[#121214]">
-                          {person.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs font-semibold text-[#F4F4F5] line-clamp-1 w-full group-hover:text-[#D9A52E] transition-colors">
-                      {person.name}
-                    </p>
-                    <p className="text-[10px] text-[#71717A] line-clamp-1 w-full">
-                      {person.role}
-                    </p>
-                  </div>
-                ))}
+                    Lihat Semua &rarr;
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+                  {recommendations.slice(0, 12).map((rec) => (
+                    <MovieCard key={rec.id} movie={rec} />
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* E. Rekomendasi Serial Serupa (Recommended Section) */}
-          {recommendations.length > 0 && (
-            <div className="pt-6 border-t border-[#1E1E22] space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-[#F4F4F5]">
-                  Rekomendasi Serupa
-                </h3>
-                <Link
-                  href="/catalog?type=tv"
-                  className="text-xs font-semibold text-[#D9A52E] hover:underline"
-                >
-                  Lihat Semua &rarr;
-                </Link>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                {recommendations.slice(0, 12).map((rec) => (
-                  <MovieCard key={rec.id} movie={rec} />
-                ))}
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* =========================================================================
-            KOLOM KANAN: Sidebar VIP Banner, Episode Selector, & Top 10 Serial (~25%)
+            KOLOM KANAN: Sidebar VIP Banner, Episode Selector, & Top 10 Serial (DESKTOP ONLY ~25%)
             ========================================================================= */}
-        <div className="lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-24">
-          {/* 1. Banner VIP Member (Dinamis: Indikator Aktif jika sudah VIP, atau Tombol Aktifkan jika belum) */}
+        <div className="hidden lg:block lg:col-span-4 xl:col-span-3 space-y-6 lg:sticky lg:top-24">
           <VipPromoCard isVip={isVip} />
-
-          {/* 2. Episode Selector Widget (Desain Grid Angka Elegan Sesuai Gambar Referensi) */}
-          <div className="rounded-2xl border border-[#1E1E22] bg-[#121215] p-4 space-y-3.5">
-            {/* Header & Season Tabs */}
-            <div className="space-y-2 border-b border-[#1E1E22] pb-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Television size={18} className="text-[#D9A52E]" weight="fill" />
-                  <h3 className="text-sm font-bold text-[#F4F4F5] uppercase tracking-wide">
-                    Pilih Episode
-                  </h3>
-                </div>
-                <span className="text-[11px] text-[#71717A]">
-                  {episodes.length} Episode
-                </span>
-              </div>
-
-              {/* Horizontal Season Pills if multiple seasons */}
-              {seasonsToDisplay.length > 1 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-1 scrollbar-none">
-                  {seasonsToDisplay.map((s) => {
-                    const isSeasonActive = s.season_number === activeSeasonNumber;
-                    return (
-                      <button
-                        key={s.id}
-                        type="button"
-                        onClick={() => handleSelectSeason(s.season_number)}
-                        className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
-                          isSeasonActive
-                            ? "bg-[#D9A52E] text-[#0A0A0A] shadow-sm shadow-[#D9A52E]/20 font-bold"
-                            : "bg-[#18181C] text-[#A1A1AA] hover:bg-[#222228] hover:text-[#F4F4F5] border border-[#27272A]"
-                        }`}
-                      >
-                        {s.name || `Musim ${s.season_number}`}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Episode Numbered Grid (1, 2, 3, 4, 5, 6, 7...) */}
-            {isLoadingSeason ? (
-              <div className="flex h-36 flex-col items-center justify-center rounded-xl bg-[#0E0E12] border border-[#1E1E22]">
-                <Spinner size={24} className="animate-spin text-[#D9A52E]" />
-                <span className="mt-2 text-xs text-[#71717A]">Memuat episode...</span>
-              </div>
-            ) : episodes.length === 0 ? (
-              <div className="p-4 text-center text-xs text-[#71717A]">
-                Belum ada episode di musim ini.
-              </div>
-            ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
-                {episodes.map((ep) => {
-                  const isPlaying =
-                    activeEpisode?.episode_number === ep.episode_number &&
-                    activeEpisode?.season_number === ep.season_number;
-                  const isTvEpisodeVipOnly = ep.episode_number >= 6;
-                  const isLocked = !isVip && isTvEpisodeVipOnly;
-
-                  return (
-                    <button
-                      key={ep.id}
-                      type="button"
-                      onClick={() => handleSelectEpisode(ep)}
-                      title={ep.name ? `Eps ${ep.episode_number}: ${ep.name}` : `Episode ${ep.episode_number}`}
-                      className={`group relative flex flex-col items-center justify-center rounded-xl py-2 px-1 transition-all text-center cursor-pointer ${
-                        isPlaying
-                          ? "border border-[#D9A52E] bg-[#D9A52E] text-[#0A0A0A] font-black shadow-md shadow-[#D9A52E]/30 scale-105"
-                          : isLocked
-                          ? "border border-[#27272A] bg-[#141418] text-[#71717A] hover:border-[#D9A52E]/60 hover:text-[#D9A52E]"
-                          : isTvEpisodeVipOnly && isVip
-                          ? "border border-[#D9A52E]/30 bg-[#1A1812]/50 text-[#F5F5F5] hover:border-[#D9A52E]"
-                          : "border border-[#27272A] bg-[#18181C] text-[#E4E4E7] hover:border-[#D9A52E]/50 hover:bg-[#202026]"
-                      }`}
-                    >
-                      <span className="text-sm font-bold leading-none">
-                        {ep.episode_number}
-                      </span>
-                      <span className="mt-1 text-[9px] uppercase tracking-wider font-semibold">
-                        {isPlaying ? (
-                          "Putar"
-                        ) : isLocked ? (
-                          <span className="flex items-center gap-0.5 text-[#D9A52E]">
-                            <LockKey size={9} weight="fill" /> VIP
-                          </span>
-                        ) : isTvEpisodeVipOnly && isVip ? (
-                          <span className="flex items-center gap-0.5 text-[#D9A52E] font-bold">
-                            <Crown size={9} weight="fill" /> VIP
-                          </span>
-                        ) : (
-                          "Free"
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* 3. Top 10 Serial Populer (Ranking List) */}
-          {top10Series.length > 0 && (
-            <div className="rounded-2xl border border-[#1E1E22] bg-[#121215] p-4 space-y-4">
-              <div className="flex items-center gap-2 border-b border-[#1E1E22] pb-3">
-                <Fire size={18} weight="fill" className="text-[#D9A52E]" />
-                <h3 className="text-sm font-bold text-[#F4F4F5] uppercase tracking-wide">
-                  Top 10 Serial Populer
-                </h3>
-              </div>
-
-              <div className="space-y-3">
-                {top10Series.map((s, index) => {
-                  const rank = index + 1;
-                  const isTop1 = rank === 1;
-
-                  if (isTop1) {
-                    return (
-                      <Link
-                        key={s.id}
-                        href={`/tv/${s.id}`}
-                        className="group flex gap-3 rounded-xl border border-[#D9A52E]/30 bg-[#1A1812]/50 p-2.5 transition hover:border-[#D9A52E] hover:bg-[#1A1812]"
-                      >
-                        <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-[#0A0A0A]">
-                          {s.posterPath ? (
-                            <Image
-                              src={s.posterPath}
-                              alt={s.title}
-                              fill
-                              unoptimized
-                              sizes="60px"
-                              className="object-cover group-hover:scale-105 transition-transform"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs font-bold text-[#71717A]">
-                              1
-                            </div>
-                          )}
-                          <span className="absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded bg-[#D9A52E] text-[11px] font-black text-[#0A0A0A]">
-                            1
-                          </span>
-                        </div>
-                        <div className="min-w-0 flex flex-col justify-center">
-                          <span className="text-[10px] font-bold text-[#D9A52E] uppercase">
-                            #1 Paling Populer
-                          </span>
-                          <h4 className="text-xs font-bold text-[#F4F4F5] line-clamp-1 group-hover:text-[#D9A52E] transition-colors">
-                            {s.title}
-                          </h4>
-                          <div className="mt-1 flex items-center gap-2 text-[10px] text-[#A1A1AA]">
-                            <span className="flex items-center gap-1 text-[#D9A52E] font-bold">
-                              <Star size={11} weight="fill" />
-                              {s.rating ? s.rating.toFixed(1) : "—"}
-                            </span>
-                            <span>•</span>
-                            <span>{s.releaseYear || "2026"}</span>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  }
-
-                  return (
-                    <Link
-                      key={s.id}
-                      href={`/tv/${s.id}`}
-                      className="group flex items-center gap-3 py-1 text-xs transition hover:text-[#D9A52E]"
-                    >
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-[11px] font-bold ${
-                          rank <= 3
-                            ? "bg-[#D9A52E]/15 text-[#D9A52E] font-black"
-                            : "text-[#71717A]"
-                        }`}
-                      >
-                        {rank}
-                      </span>
-                      <span className="min-w-0 truncate text-[#D4D4D8] group-hover:text-[#D9A52E] transition-colors">
-                        {s.title}
-                      </span>
-                      {s.rating && (
-                        <span className="ml-auto shrink-0 flex items-center gap-1 text-[10px] text-[#71717A]">
-                          <Star size={10} weight="fill" className="text-[#D9A52E]" />
-                          {s.rating.toFixed(1)}
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {renderEpisodeSelector()}
+          {renderTop10List()}
         </div>
       </div>
 
