@@ -782,7 +782,7 @@ export function EmbeddedPlayer({
             ========================================================================= */}
         {isPlaying && (
           <>
-            {/* Kondisi 1: Trailer Resmi via YouTube No-Cookie (Sandboxed & Enable JS API) */}
+            {/* Kondisi 1: Trailer Resmi via YouTube No-Cookie (Enable JS API) */}
             {activeProvider === "trailer" && streamUrl && (
               <iframe
                 ref={iframeRef}
@@ -791,7 +791,6 @@ export function EmbeddedPlayer({
                 title={`Trailer Resmi ${title}`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 referrerPolicy="strict-origin-when-cross-origin"
-                sandbox="allow-scripts allow-same-origin allow-presentation allow-fullscreen"
                 allowFullScreen
                 onLoad={() => setIsLoading(false)}
                 className="h-full w-full border-0"

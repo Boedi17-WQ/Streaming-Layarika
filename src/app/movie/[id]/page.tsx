@@ -347,6 +347,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                             src={person.profileUrl}
                             alt={person.name}
                             fill
+                            unoptimized
                             sizes="80px"
                             className="object-cover"
                           />
@@ -426,6 +427,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                               src={m.posterPath}
                               alt={m.title}
                               fill
+                              unoptimized
                               sizes="60px"
                               className="object-cover group-hover:scale-105 transition-transform"
                             />

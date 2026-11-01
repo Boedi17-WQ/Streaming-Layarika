@@ -429,6 +429,7 @@ export function TvSeasonEpisodeBrowser({
                           src={person.profileUrl}
                           alt={person.name}
                           fill
+                          unoptimized
                           sizes="80px"
                           className="object-cover"
                         />
@@ -608,6 +609,7 @@ export function TvSeasonEpisodeBrowser({
                               src={s.posterPath}
                               alt={s.title}
                               fill
+                              unoptimized
                               sizes="60px"
                               className="object-cover group-hover:scale-105 transition-transform"
                             />
