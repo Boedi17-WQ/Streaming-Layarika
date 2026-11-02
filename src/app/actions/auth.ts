@@ -147,11 +147,3 @@ export async function handleLogin(
     throw error;
   }
 }
-
-/**
- * Server Action untuk masuk akun melalui GitHub OAuth
- */
-export async function signInWithGithubAction(callbackUrl?: string) {
-  const safeCallbackUrl = callbackUrl && !callbackUrl.startsWith("http") ? callbackUrl : "/";
-  await signIn("github", { redirectTo: safeCallbackUrl });
-}
