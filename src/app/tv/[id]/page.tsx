@@ -206,6 +206,7 @@ export default async function TvDetailPage({ params }: TvDetailPageProps) {
         voteAverage={tv.vote_average}
         voteCount={tv.vote_count}
         firstAirDate={tv.first_air_date}
+        originCountry={tv.origin_country || []}
         genres={tv.genres}
         seasons={tv.seasons || []}
         initialSeasonNumber={1}
