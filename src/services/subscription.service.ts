@@ -8,11 +8,11 @@ export { getJakartaPeriodKey };
 
 /**
  * Konfigurasi flag simulasi aktivasi langganan.
- * Diaktifkan secara aman untuk demonstrasi akademik dan development.
+ * Hanya aktif jika env var SIMULATED_BILLING_ENABLED secara eksplisit diset ke "true".
+ * TIDAK otomatis aktif di non-production agar preview/staging tetap aman.
  */
 export const SIMULATED_BILLING_ENABLED =
-  process.env.SIMULATED_BILLING_ENABLED === "true" ||
-  process.env.NODE_ENV !== "production";
+  process.env.SIMULATED_BILLING_ENABLED === "true";
 
 export interface UserSubscriptionSummary {
   isVip: boolean;

@@ -25,6 +25,7 @@ export interface MidtransModalProps {
   orderId: string;
   grossAmount: number;
   planName: string;
+  durationDays?: number;
   redirectUrl?: string;
   userName?: string | null;
   userEmail?: string | null;
@@ -37,6 +38,7 @@ export function MidtransModal({
   orderId,
   grossAmount,
   planName,
+  durationDays = 30,
   redirectUrl,
   userName = null,
   userEmail = null,
@@ -59,6 +61,18 @@ export function MidtransModal({
   const [copied, setCopied] = useState<boolean>(false);
   const [checkMessage, setCheckMessage] = useState<string>("");
 
+  // Handler tutup modal dengan pembersihan state
+  const handleClose = () => {
+    setStep("channel");
+    setCustomOrderId("");
+    setVaNumber("");
+    setIsProcessing(false);
+    setIsGeneratingVa(false);
+    setIsCheckingStatus(false);
+    setCheckMessage("");
+    onClose();
+  };
+
   // Callback saat pembayaran sukses (Settlement)
   const handlePaymentCompleted = useCallback(
     async (finalOrderId: string, options?: { isSimulated?: boolean }) => {
@@ -75,12 +89,13 @@ export function MidtransModal({
 
   // Auto-polling status transaksi saat di layar bayar VA
   useEffect(() => {
-    if (!isOpen || step !== "pay" || !activeOrderId) return;
+    if (!isOpen || step !== "pay" || !activeOrderId || isGeneratingVa) return;
 
+    let isMounted = true;
     const interval = setInterval(async () => {
       try {
         const res = await checkMidtransStatusAction(activeOrderId);
-        if (res.isPaid) {
+        if (isMounted && res.isPaid) {
           clearInterval(interval);
           await handlePaymentCompleted(activeOrderId);
         }
@@ -89,8 +104,11 @@ export function MidtransModal({
       }
     }, 3500);
 
-    return () => clearInterval(interval);
-  }, [isOpen, step, activeOrderId, handlePaymentCompleted]);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isOpen, step, activeOrderId, isGeneratingVa, handlePaymentCompleted]);
 
   if (!isOpen) return null;
 
@@ -102,7 +120,6 @@ export function MidtransModal({
       selectedChannel === "bri_va"
     ) {
       setIsGeneratingVa(true);
-      setStep("pay");
       setCheckMessage("");
 
       const bank =
@@ -126,8 +143,10 @@ export function MidtransModal({
               : "16832175190399813787933"
           );
         }
+        setStep("pay");
       } catch (err) {
         console.error("Gagal generate VA Midtrans:", err);
+        setStep("pay");
       } finally {
         setIsGeneratingVa(false);
       }
@@ -184,7 +203,7 @@ export function MidtransModal({
         {/* Close Button */}
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           disabled={isProcessing}
           className="absolute top-4 right-4 p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 transition cursor-pointer"
           aria-label="Tutup jendela pembayaran"
@@ -702,7 +721,7 @@ export function MidtransModal({
               {/* Item Pembelian */}
               <div className="pt-2 border-t border-neutral-800 space-y-1.5 text-xs">
                 <div className="flex justify-between items-center text-neutral-200 font-medium">
-                  <span>{planName} (30 Hari)</span>
+                  <span>{planName} ({durationDays} Hari)</span>
                   <span className="font-mono">Rp {grossAmount.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between items-center text-neutral-500 text-[11px]">
@@ -732,7 +751,7 @@ export function MidtransModal({
 
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#D9A52E] hover:bg-[#c49226] py-3 text-xs font-bold text-neutral-950 transition cursor-pointer shadow-lg shadow-[#D9A52E]/20"
               >
                 <span>Mulai Nonton dengan Akses VIP</span>

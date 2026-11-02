@@ -3,6 +3,7 @@ import "server-only";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { SubscriptionStatus } from "@prisma/client";
+import { SIMULATED_BILLING_ENABLED } from "./subscription.service";
 
 export const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || "";
 export const MIDTRANS_CLIENT_KEY = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || "";
@@ -330,17 +331,23 @@ export async function getMidtransTransactionStatus(orderId: string): Promise<{
   paymentType?: string;
   raw?: unknown;
 } | null> {
+  // Mode simulasi: hanya diizinkan jika SIMULATED_BILLING_ENABLED aktif
   if (
-    !isMidtransConfigured() ||
-    orderId.startsWith("SIMULATED_") ||
-    orderId.startsWith("LR-VIP-SANDBOX-")
+    SIMULATED_BILLING_ENABLED &&
+    (!isMidtransConfigured() ||
+      orderId.startsWith("SIMULATED_") ||
+      orderId.startsWith("LR-VIP-SANDBOX-"))
   ) {
-    // Mode simulasi: dianggap berhasil jika berawalan SIMULATED_ / SANDBOX atau Midtrans belum dikonfigurasi
     return {
       status: "settlement",
       fraudStatus: "accept",
       statusCode: "200",
     };
+  }
+
+  if (!isMidtransConfigured()) {
+    console.warn("Midtrans Server Key belum dikonfigurasi dan mode simulasi non-aktif.");
+    return null;
   }
 
   const authHeader = `Basic ${Buffer.from(`${MIDTRANS_SERVER_KEY}:`).toString("base64")}`;
@@ -393,6 +400,16 @@ export async function fulfillVipSubscription(
 
   if (!premiumPlan) {
     throw new Error("Paket Premium VIP tidak ditemukan di database.");
+  }
+
+  // Verifikasi keberadaan akun user
+  const userExists = await db.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+
+  if (!userExists) {
+    throw new Error(`Pengguna dengan ID ${userId} tidak ditemukan di database.`);
   }
 
   const now = new Date();

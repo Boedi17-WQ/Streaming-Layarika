@@ -9,6 +9,7 @@ import {
   fulfillVipSubscription,
   SnapTransactionResult,
 } from "@/services/midtrans.service";
+import { SIMULATED_BILLING_ENABLED } from "@/services/subscription.service";
 
 /**
  * Server Action: Membuat transaksi Midtrans Snap token untuk pembayaran paket langganan.
@@ -88,11 +89,13 @@ export async function confirmMidtransPaymentAction(
   let isPaid = false;
   let currentStatus = "Belum dibayar";
 
-  if (
-    options?.isSimulated ||
-    orderId.startsWith("SIMULATED_") ||
-    orderId.startsWith("LR-VIP-SANDBOX-")
-  ) {
+  const isSimulatedBypass =
+    SIMULATED_BILLING_ENABLED &&
+    (options?.isSimulated ||
+      orderId.startsWith("SIMULATED_") ||
+      orderId.startsWith("LR-VIP-SANDBOX-"));
+
+  if (isSimulatedBypass) {
     isPaid = true;
     currentStatus = "settlement";
   } else {

@@ -42,7 +42,7 @@ export function LoginRequiredModal({
 
   if (!isOpen || isAuthenticated) return null;
 
-  const safeCallbackUrl = callbackUrl && !callbackUrl.startsWith("http") ? callbackUrl : "/";
+  const safeCallbackUrl = callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : "/";
 
   return (
     <div

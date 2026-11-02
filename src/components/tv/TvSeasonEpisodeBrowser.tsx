@@ -188,6 +188,11 @@ export function TvSeasonEpisodeBrowser({
           if (!isAuthenticated) {
             setSelectedEpisodeForLogin(ep);
             setIsLoginModalOpen(true);
+          } else {
+            // Auth mismatch: server menganggap unauthenticated padahal client sudah login
+            // Paksa refresh sesi agar token sinkron
+            console.warn("Auth mismatch detected, refreshing session...");
+            window.location.reload();
           }
         } else if (decision.reason === "VIP_REQUIRED_FOR_EPISODE") {
           setPremiumModalState({

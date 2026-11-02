@@ -54,7 +54,7 @@ export async function getInvoiceByOrderId(
       orderBy: { createdAt: "desc" },
     });
 
-    if (userTx && (orderId.includes(currentUserId.slice(-6).toUpperCase()) || orderId.startsWith("LR-"))) {
+    if (userTx && (orderId === "latest" || orderId.includes(currentUserId.slice(-6).toUpperCase()))) {
       tx = userTx;
     }
   }
@@ -110,59 +110,22 @@ export async function getInvoiceByOrderId(
         ? orderId
         : `LR-VIP-${currentUserId.slice(-6).toUpperCase()}-${new Date(activeSub.startDate).getTime()}`;
 
-      try {
-        const createdTx = await db.paymentTransaction.upsert({
-          where: { orderId: generatedOrderId },
-          create: {
-            orderId: generatedOrderId,
-            userId: currentUserId,
-            planSlug: activeSub.plan?.slug || "premium-monthly",
-            amount: activeSub.plan?.price || 49000,
-            status: "settlement",
-            paymentType: "midtrans_qris",
-            createdAt: activeSub.startDate || activeSub.createdAt,
-          },
-          update: {},
-          include: {
-            user: { select: { id: true, name: true, email: true } },
-          },
-        });
-
-        return {
-          invoice: {
-            orderId: createdTx.orderId,
-            invoiceNumber: formatInvoiceNumber(createdTx.orderId, createdTx.createdAt),
-            transactionDate: createdTx.createdAt,
-            status: createdTx.status,
-            amount: createdTx.amount,
-            planName: activeSub.plan?.name || "LayarRika Premium VIP",
-            planSlug: createdTx.planSlug,
-            durationDays: activeSub.plan?.durationDays || 30,
-            paymentMethod: "MIDTRANS PAYMENT GATEWAY",
-            customerName: createdTx.user.name || "Penikmat Sinema",
-            customerEmail: createdTx.user.email || "user@layarrika.com",
-            userId: createdTx.userId,
-          },
-        };
-      } catch (err) {
-        console.warn("Gagal membuat fallback transaksi faktur:", err);
-        return {
-          invoice: {
-            orderId: generatedOrderId,
-            invoiceNumber: formatInvoiceNumber(generatedOrderId, activeSub.startDate || new Date()),
-            transactionDate: activeSub.startDate || new Date(),
-            status: "settlement",
-            amount: activeSub.plan?.price || 49000,
-            planName: activeSub.plan?.name || "LayarRika Premium VIP",
-            planSlug: activeSub.plan?.slug || "premium-monthly",
-            durationDays: activeSub.plan?.durationDays || 30,
-            paymentMethod: "MIDTRANS PAYMENT GATEWAY",
-            customerName: activeSub.user.name || "Penikmat Sinema",
-            customerEmail: activeSub.user.email || "user@layarrika.com",
-            userId: activeSub.userId,
-          },
-        };
-      }
+      return {
+        invoice: {
+          orderId: generatedOrderId,
+          invoiceNumber: formatInvoiceNumber(generatedOrderId, activeSub.startDate || new Date()),
+          transactionDate: activeSub.startDate || new Date(),
+          status: "settlement",
+          amount: activeSub.plan?.price || 49000,
+          planName: activeSub.plan?.name || "LayarRika Premium VIP",
+          planSlug: activeSub.plan?.slug || "premium-monthly",
+          durationDays: activeSub.plan?.durationDays || 30,
+          paymentMethod: "AKTIVASI VIP LAYARRIKA",
+          customerName: activeSub.user.name || "Penikmat Sinema",
+          customerEmail: activeSub.user.email || "user@layarrika.com",
+          userId: activeSub.userId,
+        },
+      };
     }
   }
 
@@ -172,12 +135,12 @@ export async function getInvoiceByOrderId(
 /**
  * Mengambil seluruh daftar faktur / riwayat transaksi milik pengguna tertentu.
  * Jika belum ada data transaksi tetapi pengguna memiliki langganan aktif,
- * otomatis mencatat transaksi dan menyertakannya di riwayat faktur.
+ * menyajikan ringkasan faktur berbasis langganan aktif tanpa side-effect write.
  */
 export async function getUserInvoices(userId: string): Promise<InvoiceData[]> {
   if (!userId) return [];
 
-  let transactions = await db.paymentTransaction.findMany({
+  const transactions = await db.paymentTransaction.findMany({
     where: { userId },
     include: {
       user: {
@@ -190,11 +153,10 @@ export async function getUserInvoices(userId: string): Promise<InvoiceData[]> {
     orderBy: { createdAt: "desc" },
   });
 
-  const premiumPlan = await db.subscriptionPlan.findUnique({
-    where: { slug: "premium-monthly" },
-  });
+  const plans = await db.subscriptionPlan.findMany();
+  const planMap = new Map(plans.map((p) => [p.slug, p]));
 
-  // Jika belum ada data transaksi tetapi pengguna memiliki langganan aktif, auto-heal dan rekam
+  // Jika belum ada data transaksi tetapi pengguna memiliki langganan aktif
   if (transactions.length === 0) {
     const activeSub = await db.userSubscription.findFirst({
       where: {
@@ -216,65 +178,42 @@ export async function getUserInvoices(userId: string): Promise<InvoiceData[]> {
 
     if (activeSub && activeSub.user) {
       const generatedOrderId = `LR-VIP-${userId.slice(-6).toUpperCase()}-${new Date(activeSub.startDate).getTime()}`;
-      try {
-        const createdTx = await db.paymentTransaction.upsert({
-          where: { orderId: generatedOrderId },
-          create: {
-            orderId: generatedOrderId,
-            userId,
-            planSlug: activeSub.plan?.slug || "premium-monthly",
-            amount: activeSub.plan?.price || 49000,
-            status: "settlement",
-            paymentType: "midtrans_qris",
-            createdAt: activeSub.startDate || activeSub.createdAt,
-          },
-          update: {},
-          include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
-          },
-        });
-        transactions = [createdTx];
-      } catch (err) {
-        console.warn("Gagal membuat fallback transaksi di getUserInvoices:", err);
-        return [
-          {
-            orderId: generatedOrderId,
-            invoiceNumber: formatInvoiceNumber(generatedOrderId, activeSub.startDate || new Date()),
-            transactionDate: activeSub.startDate || new Date(),
-            status: "settlement",
-            amount: activeSub.plan?.price || 49000,
-            planName: activeSub.plan?.name || "LayarRika Premium VIP",
-            planSlug: activeSub.plan?.slug || "premium-monthly",
-            durationDays: activeSub.plan?.durationDays || 30,
-            paymentMethod: "MIDTRANS PAYMENT GATEWAY",
-            customerName: activeSub.user.name || "Penikmat Sinema",
-            customerEmail: activeSub.user.email || "user@layarrika.com",
-            userId: activeSub.userId,
-          },
-        ];
-      }
+      return [
+        {
+          orderId: generatedOrderId,
+          invoiceNumber: formatInvoiceNumber(generatedOrderId, activeSub.startDate || new Date()),
+          transactionDate: activeSub.startDate || new Date(),
+          status: "settlement",
+          amount: activeSub.plan?.price || 49000,
+          planName: activeSub.plan?.name || "LayarRika Premium VIP",
+          planSlug: activeSub.plan?.slug || "premium-monthly",
+          durationDays: activeSub.plan?.durationDays || 30,
+          paymentMethod: "AKTIVASI VIP LAYARRIKA",
+          customerName: activeSub.user.name || "Penikmat Sinema",
+          customerEmail: activeSub.user.email || "user@layarrika.com",
+          userId: activeSub.userId,
+        },
+      ];
     }
   }
 
-  return transactions.map((tx) => ({
-    orderId: tx.orderId,
-    invoiceNumber: formatInvoiceNumber(tx.orderId, tx.createdAt),
-    transactionDate: tx.createdAt,
-    status: tx.status,
-    amount: tx.amount,
-    planName: premiumPlan?.name || "LayarRika Premium VIP",
-    planSlug: tx.planSlug,
-    durationDays: premiumPlan?.durationDays || 30,
-    paymentMethod: tx.paymentType
-      ? tx.paymentType.replace(/_/g, " ").toUpperCase()
-      : "Midtrans Gateway",
-    customerName: tx.user.name || "Penikmat Sinema",
-    customerEmail: tx.user.email || "user@layarrika.com",
-    userId: tx.userId,
-  }));
+  return transactions.map((tx) => {
+    const plan = planMap.get(tx.planSlug);
+    return {
+      orderId: tx.orderId,
+      invoiceNumber: formatInvoiceNumber(tx.orderId, tx.createdAt),
+      transactionDate: tx.createdAt,
+      status: tx.status,
+      amount: tx.amount,
+      planName: plan?.name || "LayarRika Premium VIP",
+      planSlug: tx.planSlug,
+      durationDays: plan?.durationDays || 30,
+      paymentMethod: tx.paymentType
+        ? tx.paymentType.replace(/_/g, " ").toUpperCase()
+        : "MIDTRANS GATEWAY",
+      customerName: tx.user.name || "Penikmat Sinema",
+      customerEmail: tx.user.email || "user@layarrika.com",
+      userId: tx.userId,
+    };
+  });
 }

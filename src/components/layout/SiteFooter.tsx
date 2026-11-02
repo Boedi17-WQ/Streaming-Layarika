@@ -1,9 +1,16 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { FilmReel } from "@phosphor-icons/react/dist/ssr";
+import { FilmReel } from "@phosphor-icons/react";
 
 export function SiteFooter() {
-  const currentYear = 2026;
+  const [currentYear, setCurrentYear] = useState<number>(2026);
+
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
 
   return (
     <footer className="mt-20 border-t border-[#222222] bg-[#0A0A0A] py-10 text-[#A3A3A3] text-sm">

@@ -95,7 +95,7 @@ export function InvoiceView({ invoice, autoPrint = false }: InvoiceViewProps) {
               Platform Sinematik Streaming Film & Serial
             </p>
             <p className="text-[11px] text-neutral-400 print:text-neutral-600">
-              Indonesia • layariika.vercel.app
+              Indonesia • layarrika.vercel.app
             </p>
           </div>
 

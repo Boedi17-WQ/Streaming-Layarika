@@ -109,7 +109,7 @@ export async function handleLogin(
   const email = formData.get("email");
   const password = formData.get("password");
   const callbackUrl = (formData.get("callbackUrl") as string) || "/";
-  const safeCallbackUrl = callbackUrl && !callbackUrl.startsWith("http") ? callbackUrl : "/";
+  const safeCallbackUrl = callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : "/";
 
   const parsed = loginSchema.safeParse({ email, password });
   if (!parsed.success) {

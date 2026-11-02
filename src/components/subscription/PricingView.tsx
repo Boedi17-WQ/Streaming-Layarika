@@ -89,12 +89,14 @@ export function PricingView({
     orderId: string;
     grossAmount: number;
     planName: string;
+    durationDays: number;
     redirectUrl?: string;
   }>({
     isOpen: false,
     orderId: "",
     grossAmount: 49000,
     planName: "LayarRika Premium VIP",
+    durationDays: 30,
   });
 
   // 1. Alur Pembayaran Utama: Menggunakan Midtrans Sandbox Snap
@@ -186,11 +188,13 @@ export function PricingView({
       } else {
         // Skenario B: Mode Simulasi Terintegrasi (Kunci belum dipasang atau mode mock)
         setIsPayingMidtrans(false);
+        const premiumPlan = plans.find((p) => p.slug === "premium-monthly");
         setSimulatedModalData({
           isOpen: true,
           orderId: res.orderId || `LR-VIP-SANDBOX-${Date.now()}`,
-          grossAmount: 49000,
-          planName: "LayarRika Premium VIP",
+          grossAmount: premiumPlan?.price ?? 49000,
+          planName: premiumPlan?.name ?? "LayarRika Premium VIP",
+          durationDays: premiumPlan?.durationDays ?? 30,
           redirectUrl: res.redirectUrl,
         });
       }
@@ -279,6 +283,7 @@ export function PricingView({
         orderId={simulatedModalData.orderId}
         grossAmount={simulatedModalData.grossAmount}
         planName={simulatedModalData.planName}
+        durationDays={simulatedModalData.durationDays}
         redirectUrl={simulatedModalData.redirectUrl}
         userName={userName}
         userEmail={userEmail}

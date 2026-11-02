@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -176,14 +175,17 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
 
   const allCrewAndCast = [...directorEntry, ...castEntries];
 
-  // Sinkronisasi status autentikasi & langganan pengguna
+  // Sinkronisasi status autentikasi, langganan & watchlist pengguna (1x auth call)
   await connection();
   const session = await auth();
   const userId =
     session?.user?.id ||
     (session?.user as { sub?: string } | undefined)?.sub ||
     null;
-  const subStatus = userId ? await getUserSubscriptionStatus(userId) : null;
+  const [subStatus, isInWatchlist] = await Promise.all([
+    userId ? getUserSubscriptionStatus(userId) : Promise.resolve(null),
+    userId ? isItemInWatchlist(userId, movie.id, "MOVIE") : Promise.resolve(false),
+  ]);
   const isVip = subStatus?.isVip || false;
 
   // Widget Top 10 Film Populer untuk Mobile & Desktop Sidebar
@@ -312,21 +314,16 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
           <div className="lg:col-span-8 xl:col-span-9 space-y-4 sm:space-y-5">
             {/* A. Pemutar Streaming Langsung di Paling Atas */}
             <div className="w-full">
-              <Suspense
-                fallback={
-                  <div className="relative aspect-video w-full rounded-none sm:rounded-2xl border-0 sm:border border-[#222226] bg-[#050505] flex items-center justify-center animate-pulse">
-                    <span className="text-xs text-[#71717A]">Memuat pemutar video...</span>
-                  </div>
-                }
-              >
-                <MoviePlayerSlot
-                  tmdbId={movie.id}
-                  title={movie.title}
-                  posterPath={movie.poster_path}
-                  backdropPath={movie.backdrop_path}
-                  youtubeKey={youtubeKey}
-                />
-              </Suspense>
+              <EmbeddedPlayer
+                tmdbId={movie.id}
+                mediaType="MOVIE"
+                title={movie.title}
+                posterPath={movie.poster_path}
+                backdropPath={movie.backdrop_path}
+                youtubeKey={youtubeKey}
+                isAuthenticated={Boolean(userId)}
+                isVipInitial={isVip}
+              />
             </div>
 
             {/* Wrapper Berjarak Padding Rapi di Bawah Player */}
@@ -334,19 +331,15 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
               {/* B. Action Bar di Bawah Player (Watch Later, Playlist, Share) */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-1 pb-3 border-b border-[#1E1E22]">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Suspense
-                    fallback={
-                      <div className="h-8 w-28 rounded-lg bg-[#18181B] animate-pulse" />
-                    }
-                  >
-                    <MovieWatchlistSlot
-                      tmdbId={movie.id}
-                      title={movie.title}
-                      posterPath={movie.poster_path}
-                      rating={movie.vote_average}
-                      releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
-                    />
-                  </Suspense>
+                  <WatchlistButton
+                    tmdbId={movie.id}
+                    mediaType="MOVIE"
+                    title={movie.title}
+                    posterPath={movie.poster_path}
+                    rating={movie.vote_average}
+                    releaseYear={releaseYear !== "—" ? parseInt(releaseYear, 10) : undefined}
+                    initialInWatchlist={isInWatchlist}
+                  />
 
                   <AddToPlaylistButton
                     tmdbId={movie.id}
@@ -506,72 +499,5 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
         </div>
       </div>
     </div>
-  );
-}
-
-async function MoviePlayerSlot({
-  tmdbId,
-  title,
-  posterPath,
-  backdropPath,
-  youtubeKey,
-}: {
-  tmdbId: number;
-  title: string;
-  posterPath: string | null;
-  backdropPath: string | null;
-  youtubeKey: string | null;
-}) {
-  await connection();
-  const session = await auth();
-  const userId =
-    session?.user?.id ||
-    (session?.user as { sub?: string } | undefined)?.sub ||
-    null;
-  const subStatus = userId ? await getUserSubscriptionStatus(userId) : null;
-
-  return (
-    <EmbeddedPlayer
-      tmdbId={tmdbId}
-      mediaType="MOVIE"
-      title={title}
-      posterPath={posterPath}
-      backdropPath={backdropPath}
-      youtubeKey={youtubeKey}
-      isAuthenticated={Boolean(userId)}
-      isVipInitial={subStatus?.isVip || false}
-    />
-  );
-}
-
-async function MovieWatchlistSlot({
-  tmdbId,
-  title,
-  posterPath,
-  rating,
-  releaseYear,
-}: {
-  tmdbId: number;
-  title: string;
-  posterPath: string | null;
-  rating?: number | null;
-  releaseYear?: number;
-}) {
-  await connection();
-  const session = await auth();
-  const isInWatchlist = session?.user?.id
-    ? await isItemInWatchlist(session.user.id, tmdbId, "MOVIE")
-    : false;
-
-  return (
-    <WatchlistButton
-      tmdbId={tmdbId}
-      mediaType="MOVIE"
-      title={title}
-      posterPath={posterPath}
-      rating={rating}
-      releaseYear={releaseYear}
-      initialInWatchlist={isInWatchlist}
-    />
   );
 }
