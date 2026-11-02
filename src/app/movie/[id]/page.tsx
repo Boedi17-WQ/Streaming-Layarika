@@ -282,8 +282,8 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-[#F5F5F5] pb-24">
-      {/* 1. Sub-nav Breadcrumb Ringkas */}
-      <div className="border-b border-[#1C1C20] bg-[#0E0E12]/80 backdrop-blur-md sticky top-16 z-20">
+      {/* 1. Sub-nav Breadcrumb Ringkas (Khusus Layar Lebar) */}
+      <div className="hidden md:block border-b border-[#1C1C20] bg-[#0E0E12]/80 backdrop-blur-md sticky top-16 z-20">
         <div className="mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between text-xs">
           <Link
             href="/catalog?type=movie"

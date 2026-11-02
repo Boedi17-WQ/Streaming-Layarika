@@ -146,9 +146,16 @@ export function SiteHeader({ user }: SiteHeaderProps) {
   const searchMatch = checkNavActive(pathname, searchParamsType, "/search");
   const profileMatch = checkNavActive(pathname, searchParamsType, "/profile");
 
+  // Pada halaman detail tontonan (Movie/TV), sembunyikan header di mobile agar tampilan bersih & edge-to-edge
+  const isDetailPage = pathname.startsWith("/tv/") || pathname.startsWith("/movie/");
+
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-[#222222] bg-[#0A0A0A]/95 backdrop-blur-xl transition-all">
+      <header
+        className={`sticky top-0 z-50 w-full border-b border-[#222222] bg-[#0A0A0A]/95 backdrop-blur-xl transition-all ${
+          isDetailPage ? "hidden md:block" : ""
+        }`}
+      >
         <Suspense fallback={null}>
           <SearchParamsWatcher onTypeChange={handleTypeChange} />
         </Suspense>

@@ -20,6 +20,7 @@ import {
   Clock,
   CornersOut,
   ArrowSquareOut,
+  ArrowLeft,
 } from "@phosphor-icons/react";
 import { recordWatchProgressAction } from "@/app/actions/history";
 import {
@@ -501,6 +502,28 @@ export function EmbeddedPlayer({
           isFullscreen ? "fixed inset-0 z-50 !aspect-auto !h-screen !w-screen !rounded-none !border-0" : ""
         }`}
       >
+        {/* Tombol Kembali Mengambang Khusus Mobile (Modern Streaming App Layout) */}
+        <button
+          type="button"
+          onClick={() => {
+            if (isFullscreen) {
+              if (document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+              }
+              return;
+            }
+            if (typeof window !== "undefined" && window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.location.href = mediaType === "TV" ? "/catalog?type=tv" : "/catalog?type=movie";
+            }
+          }}
+          className="md:hidden absolute top-3 left-3 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/80 transition cursor-pointer active:scale-95 shadow-lg"
+          aria-label="Kembali"
+        >
+          <ArrowLeft size={16} weight="bold" />
+        </button>
+
         {/* Loading Spinner saat memuat */}
         {isLoading && (
           <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0A0A0A]/90 backdrop-blur-xs text-[#F5F5F5] transition-opacity duration-300">
