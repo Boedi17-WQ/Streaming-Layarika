@@ -22,8 +22,9 @@ export interface InvoiceData {
  * Menghasilkan nomor faktur standar resmi LayarRika.
  * Format: INV/LR/YYYY/XXXXXX
  */
-export function formatInvoiceNumber(orderId: string, createdAt: Date = new Date()): string {
-  const year = createdAt.getFullYear();
+export function formatInvoiceNumber(orderId: string, createdAt: Date | string = new Date()): string {
+  const dateObj = typeof createdAt === "string" ? new Date(createdAt) : createdAt;
+  const year = isNaN(dateObj.getTime()) ? new Date().getFullYear() : dateObj.getFullYear();
   const cleanId = orderId.replace(/[^a-zA-Z0-9]/g, "").slice(-8).toUpperCase();
   return `INV/LR/${year}/${cleanId}`;
 }

@@ -377,11 +377,12 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                             <span>VIP Member Aktif</span>
                           </span>
                           <Link
-                            href="/pricing"
+                            href="/profile#riwayat-faktur"
                             onClick={() => setUserDropdownOpen(false)}
-                            className="text-[10px] text-[#D9A52E] hover:underline"
+                            className="text-[10px] text-[#D9A52E] hover:underline flex items-center gap-1"
                           >
-                            Detail
+                            <Receipt size={12} weight="bold" />
+                            <span>Bukti Bayar</span>
                           </Link>
                         </div>
                       ) : (
