@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Crown, Receipt } from "@phosphor-icons/react";
+import { Crown } from "@phosphor-icons/react";
 import { getUserEntitlementAction } from "@/app/actions/subscription";
 
 export interface VipPromoCardProps {
@@ -62,16 +62,7 @@ export function VipPromoCard({ isVip: isVipProp = false, className = "" }: VipPr
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Link
-            href="/profile#riwayat-faktur"
-            title="Lihat Bukti Pembayaran / Faktur VIP"
-            className="flex items-center gap-1 rounded-lg border border-[#D9A52E]/30 bg-[#D9A52E]/10 px-2 py-1 text-[11px] font-semibold text-[#D9A52E] hover:bg-[#D9A52E]/20 hover:border-[#D9A52E]/50 transition"
-          >
-            <Receipt size={13} weight="bold" />
-            <span className="hidden sm:inline">Bukti Bayar</span>
-            <span className="sm:hidden">Faktur</span>
-          </Link>
+        <div className="shrink-0">
           <Link
             href="/profile"
             className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-[#D4D4D8] hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:text-emerald-400 transition"

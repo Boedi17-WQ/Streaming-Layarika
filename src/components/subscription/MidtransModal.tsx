@@ -746,7 +746,7 @@ export function MidtransModal({
                 className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#D9A52E]/40 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 py-2.5 text-xs font-bold text-[#D9A52E] transition shadow-sm"
               >
                 <Printer size={16} weight="bold" />
-                <span>Buka Lembar Faktur & Cetak PDF</span>
+                <span>Lihat Bukti Bayar & Cetak PDF</span>
               </a>
 
               <button

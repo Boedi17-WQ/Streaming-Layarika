@@ -7,7 +7,6 @@ import {
   getUserSubscriptionStatus,
   SIMULATED_BILLING_ENABLED,
 } from "@/services/subscription.service";
-import { getUserInvoices } from "@/services/invoice.service";
 import { PricingView, PlanData } from "@/components/subscription/PricingView";
 import { Crown } from "@phosphor-icons/react/dist/ssr";
 
@@ -51,10 +50,9 @@ async function PricingDataLoader() {
   const session = await auth();
   const userId = session?.user?.id || null;
 
-  const [rawPlans, userStatus, userInvoices] = await Promise.all([
+  const [rawPlans, userStatus] = await Promise.all([
     getSubscriptionPlans(),
     getUserSubscriptionStatus(userId),
-    userId ? getUserInvoices(userId) : Promise.resolve([]),
   ]);
 
   const plans: PlanData[] = rawPlans.map((p) => ({
@@ -80,7 +78,6 @@ async function PricingDataLoader() {
       clientKey={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ""}
       userName={session?.user?.name || null}
       userEmail={session?.user?.email || null}
-      latestOrderId={userInvoices.length > 0 ? userInvoices[0].orderId : null}
     />
   );
 }

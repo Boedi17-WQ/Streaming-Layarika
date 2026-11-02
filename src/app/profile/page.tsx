@@ -226,23 +226,6 @@ export default async function ProfilePage() {
                       })}`
                     : "Batas tontonan Free berlaku setiap hari"}
                 </p>
-
-                {/* Tombol Lihat Faktur / Invoice di bawah VIP Member Aktif */}
-                {entitlement.isVip && (
-                  <div className="pt-2">
-                    <Link
-                      href={
-                        invoices.length > 0
-                          ? `/invoice/${encodeURIComponent(invoices[0].orderId)}`
-                          : "#riwayat-faktur"
-                      }
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[#D9A52E]/40 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 text-[#D9A52E] text-xs font-bold transition shadow-sm cursor-pointer"
-                    >
-                      <Receipt size={14} weight="bold" />
-                      <span>Lihat Faktur / Invoice Pembayaran</span>
-                    </Link>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -254,10 +237,10 @@ export default async function ProfilePage() {
                       ? `/invoice/${encodeURIComponent(invoices[0].orderId)}`
                       : "#riwayat-faktur"
                   }
-                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold transition shadow-sm cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#D9A52E]/40 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 text-[#D9A52E] text-xs font-bold transition shadow-sm cursor-pointer"
                 >
-                  <Receipt size={15} className="text-[#D9A52E]" weight="bold" />
-                  <span>Lihat Invoice</span>
+                  <Receipt size={15} weight="bold" />
+                  <span>Bukti Bayar</span>
                 </Link>
               )}
 

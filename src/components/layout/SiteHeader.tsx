@@ -371,19 +371,12 @@ export function SiteHeader({ user }: SiteHeaderProps) {
 
                       {/* Status Langganan Badge */}
                       {user.isVip ? (
-                        <div className="mt-2.5 flex items-center justify-between rounded-lg bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-2.5 py-1 text-[11px] font-bold text-[#D9A52E]">
+                        <div className="mt-2.5 flex items-center justify-between rounded-lg bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-2.5 py-1.5 text-[11px] font-bold text-[#D9A52E]">
                           <span className="flex items-center gap-1.5">
                             <Crown size={14} weight="fill" />
                             <span>VIP Member Aktif</span>
                           </span>
-                          <Link
-                            href="/profile#riwayat-faktur"
-                            onClick={() => setUserDropdownOpen(false)}
-                            className="text-[10px] text-[#D9A52E] hover:underline flex items-center gap-1"
-                          >
-                            <Receipt size={12} weight="bold" />
-                            <span>Bukti Bayar</span>
-                          </Link>
+                          <span className="text-[10px] text-emerald-400 font-semibold">Aktif</span>
                         </div>
                       ) : (
                         <Link

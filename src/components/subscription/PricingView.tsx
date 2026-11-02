@@ -14,7 +14,6 @@ import {
   CalendarCheck,
   CreditCard,
   Lightning,
-  Receipt,
 } from "@phosphor-icons/react";
 import { activateSimulatedVipAction } from "@/app/actions/subscription";
 import {
@@ -61,7 +60,6 @@ interface PricingViewProps {
   clientKey?: string;
   userName?: string | null;
   userEmail?: string | null;
-  latestOrderId?: string | null;
 }
 
 export function PricingView({
@@ -74,7 +72,6 @@ export function PricingView({
   clientKey = "",
   userName = null,
   userEmail = null,
-  latestOrderId = null,
 }: PricingViewProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -418,18 +415,13 @@ export function PricingView({
                         </div>
                       )}
 
-                      {/* Tombol Lihat Faktur / Invoice untuk VIP Member Aktif */}
+                      {/* Navigasi Kelola Akun untuk VIP Member Aktif */}
                       <div className="pt-2">
                         <Link
-                          href={
-                            latestOrderId
-                              ? `/invoice/${encodeURIComponent(latestOrderId)}`
-                              : "/profile"
-                          }
-                          className="inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-[#D9A52E]/40 bg-[#D9A52E]/10 hover:bg-[#D9A52E]/20 text-[#D9A52E] text-xs font-bold transition shadow-sm cursor-pointer"
+                          href="/profile"
+                          className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-semibold transition shadow-sm"
                         >
-                          <Receipt size={16} weight="bold" />
-                          <span>Lihat Faktur / Invoice Pembayaran</span>
+                          <span>Kelola Akun & Langganan di Profil &rarr;</span>
                         </Link>
                       </div>
                     </div>
