@@ -23,7 +23,7 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
       : [];
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
   const touchStartXRef = useRef<number | null>(null);
 
   const totalSlides = slideMovies.length;
@@ -36,24 +36,23 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
 
   const handleNext = useCallback(() => {
     if (totalSlides <= 1) return;
-    setCurrentIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
+    setCurrentIndex((prev) => (prev + 1) % totalSlides);
   }, [totalSlides]);
 
-  // Otomatis berpindah slide setiap 5.5 detik (auto-advance), jeda saat kursor melayang (hover)
+  // Otomatis berpindah slide dan REPEAT tanpa henti (Infinite Loop setiap 5 detik)
   useEffect(() => {
-    if (isPaused || totalSlides <= 1) return;
+    if (totalSlides <= 1 || isHovered) return;
 
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % totalSlides);
-    }, 5500);
+    }, 5000);
 
     return () => clearInterval(timer);
-  }, [isPaused, totalSlides]);
+  }, [totalSlides, currentIndex, isHovered]);
 
-  // Dukungan gestur geser (swipe) pada layar sentuh ponsel
+  // Dukungan gestur geser (swipe) khusus layar sentuh smartphone
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartXRef.current = e.touches[0].clientX;
-    setIsPaused(true);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -61,14 +60,18 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
       const touchEndX = e.changedTouches[0].clientX;
       const diff = touchStartXRef.current - touchEndX;
 
-      if (diff > 45) {
+      // Geser minimal 40px untuk beralih slide
+      if (diff > 40) {
         handleNext();
-      } else if (diff < -45) {
+      } else if (diff < -40) {
         handlePrev();
       }
     }
     touchStartXRef.current = null;
-    setIsPaused(false);
+  };
+
+  const handleTouchCancel = () => {
+    touchStartXRef.current = null;
   };
 
   if (!activeMovie) return null;
@@ -78,14 +81,15 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
 
   return (
     <section
-      className="relative overflow-hidden border-b border-[#292929] bg-[#0A0A0A] min-h-[440px] sm:min-h-[500px] lg:min-h-[540px] flex items-center select-none"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      className="relative overflow-hidden border-b border-[#292929] bg-[#0A0A0A] min-h-[380px] sm:min-h-[480px] lg:min-h-[540px] flex items-center select-none"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      aria-label="Sorotan Film Populer"
+      onTouchCancel={handleTouchCancel}
+      aria-label="Sorotan Film Populer Otomatis"
     >
-      {/* 1. Lapisan Gambar Latar Belakang (Transisi Fade Halus Sinematik) */}
+      {/* 1. Lapisan Gambar Latar Belakang (Transisi Fade Sinematik Responsif) */}
       {slideMovies.map((movie, idx) => {
         const isActive = idx === currentIndex;
         return (
@@ -104,49 +108,51 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
                 priority={idx === 0}
                 unoptimized
                 sizes="100vw"
-                className="object-cover object-top opacity-35"
+                className="object-cover object-center sm:object-top opacity-35"
               />
             ) : (
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(217,165,46,0.15),rgba(10,10,10,0))]" />
             )}
-            {/* Gradien Overlay Sinematik */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/85 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-black/40" />
+            {/* Gradien Gelap Pelindung Keterbacaan Teks di Mobile & Desktop */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/85 to-transparent sm:via-[#0A0A0A]/75" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/40 to-transparent" />
           </div>
         );
       })}
 
-      {/* 2. Tombol Navigasi Panah Kiri (<) */}
+      {/* 2. Tombol Navigasi Panah Kiri (<) - Responsif di Ponsel & Desktop */}
       {totalSlides > 1 && (
         <button
           type="button"
           onClick={handlePrev}
           aria-label="Lihat film sebelumnya"
-          className="absolute left-3 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="absolute left-2 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
-          <CaretLeft size={22} weight="bold" />
+          <CaretLeft size={18} weight="bold" className="sm:hidden" />
+          <CaretLeft size={24} weight="bold" className="hidden sm:block" />
         </button>
       )}
 
-      {/* 3. Tombol Navigasi Panah Kanan (>) */}
+      {/* 3. Tombol Navigasi Panah Kanan (>) - Responsif di Ponsel & Desktop */}
       {totalSlides > 1 && (
         <button
           type="button"
           onClick={handleNext}
           aria-label="Lihat film selanjutnya"
-          className="absolute right-3 sm:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="absolute right-2 sm:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
-          <CaretRight size={22} weight="bold" />
+          <CaretRight size={18} weight="bold" className="sm:hidden" />
+          <CaretRight size={24} weight="bold" className="hidden sm:block" />
         </button>
       )}
 
       {/* 4. Konten Utama: Judul Film, Metadata (Rating • Tahun • Genre), dan Tombol Mulai Nonton */}
-      <Container className="relative z-10 pt-12 pb-16 sm:pt-20 sm:pb-24">
-        <div className="max-w-3xl space-y-4 sm:space-y-5 px-8 sm:px-12 lg:px-4">
+      <Container className="relative z-10 pt-10 pb-14 sm:pt-20 sm:pb-24">
+        <div className="max-w-3xl space-y-3.5 sm:space-y-5 px-10 sm:px-16 lg:px-6">
           {/* A. Judul Film */}
           <h1
             key={`title-${activeMovie.id}`}
-            className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#F5F5F5] leading-tight drop-shadow-md animate-in fade-in duration-300"
+            className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#F5F5F5] leading-tight drop-shadow-md line-clamp-2 animate-in fade-in duration-300"
           >
             {activeMovie.title}
           </h1>
@@ -154,11 +160,11 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
           {/* B. Metadata Ringkas: Rating • Tahun • Genre */}
           <div
             key={`meta-${activeMovie.id}`}
-            className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs sm:text-sm text-[#A3A3A3] animate-in fade-in duration-300"
+            className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-[#A3A3A3] animate-in fade-in duration-300"
           >
             {activeMovie.rating > 0 && (
               <div className="flex items-center gap-1 font-bold text-[#F5F5F5]">
-                <Star size={15} weight="fill" className="text-[#D9A52E]" />
+                <Star size={14} weight="fill" className="text-[#D9A52E]" />
                 <span>{activeMovie.rating.toFixed(1)}/10</span>
               </div>
             )}
@@ -173,18 +179,18 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
             {activeMovie.genres && activeMovie.genres.length > 0 && (
               <>
                 <span className="text-neutral-500">•</span>
-                <span className="text-neutral-300">{activeMovie.genres.join(", ")}</span>
+                <span className="text-neutral-300 line-clamp-1">{activeMovie.genres.join(", ")}</span>
               </>
             )}
           </div>
 
           {/* C. Tombol Mulai Nonton */}
-          <div className="pt-2">
+          <div className="pt-1.5 sm:pt-2">
             <Link
               href={`${detailHref}#player-section`}
-              className="inline-flex items-center gap-2.5 rounded-xl border border-[#D9A52E] bg-gradient-to-r from-[#D9A52E] to-[#b3821c] px-6 py-3 text-sm font-bold text-[#0A0A0A] shadow-lg shadow-[#D9A52E]/25 transition hover:from-[#e5b33d] hover:to-[#c49226] hover:border-[#e5b33d] active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-gradient-to-r from-[#D9A52E] to-[#b3821c] px-4 py-2.5 sm:px-6 sm:py-3 text-xs sm:text-sm font-bold text-[#0A0A0A] shadow-lg shadow-[#D9A52E]/25 transition hover:from-[#e5b33d] hover:to-[#c49226] hover:border-[#e5b33d] active:scale-[0.98]"
             >
-              <Play size={17} weight="fill" />
+              <Play size={16} weight="fill" />
               <span>Mulai Nonton</span>
             </Link>
           </div>
@@ -194,7 +200,7 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
       {/* 5. Indikator Titik Navigasi Slider (Sesuai Referensi Gambar di Kanan Bawah) */}
       {totalSlides > 1 && (
         <div
-          className="absolute bottom-6 right-6 sm:bottom-8 sm:right-10 lg:right-14 z-20 flex items-center gap-1.5 sm:gap-2"
+          className="absolute bottom-4 right-3 sm:bottom-8 sm:right-10 lg:right-14 z-20 flex items-center gap-1 sm:gap-2"
           role="tablist"
           aria-label="Pilih film populer"
         >
@@ -210,8 +216,8 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
                 onClick={() => setCurrentIndex(idx)}
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
                   isActive
-                    ? "w-6 sm:w-8 h-2 sm:h-2.5 bg-[#D9A52E] shadow-sm shadow-[#D9A52E]/50"
-                    : "w-2 sm:w-2.5 h-2 sm:h-2.5 bg-white/30 hover:bg-white/70"
+                    ? "w-5 sm:w-8 h-1.5 sm:h-2.5 bg-[#D9A52E] shadow-sm shadow-[#D9A52E]/50"
+                    : "w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 bg-white/30 hover:bg-white/70"
                 }`}
               />
             );
