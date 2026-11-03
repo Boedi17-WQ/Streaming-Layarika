@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Movie } from "@/types/movie";
-import { Play, FilmReel, Television, Star } from "@phosphor-icons/react/dist/ssr";
+import { Play, FilmReel, Television, Star } from "@phosphor-icons/react";
 
 interface SearchResultListItemProps {
   movie: Movie;
