@@ -23,32 +23,62 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
       : [];
 
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const touchStartXRef = useRef<number | null>(null);
 
   const totalSlides = slideMovies.length;
   const activeMovie = slideMovies[currentIndex] || slideMovies[0];
 
+  // Fungsi mengatur ulang timer 3 detik setiap kali terjadi perpindahan (otomatis / manual)
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    if (totalSlides <= 1) return;
+
+    timerRef.current = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % totalSlides);
+    }, 3000);
+  }, [totalSlides]);
+
   const handlePrev = useCallback(() => {
     if (totalSlides <= 1) return;
     setCurrentIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
-  }, [totalSlides]);
+    resetTimer();
+  }, [totalSlides, resetTimer]);
 
   const handleNext = useCallback(() => {
     if (totalSlides <= 1) return;
     setCurrentIndex((prev) => (prev + 1) % totalSlides);
-  }, [totalSlides]);
+    resetTimer();
+  }, [totalSlides, resetTimer]);
 
-  // Otomatis berpindah slide dan REPEAT setiap 3 detik (sesuai instruksi pengguna)
+  const handleSelectDot = useCallback(
+    (idx: number) => {
+      setCurrentIndex(idx);
+      resetTimer();
+    },
+    [resetTimer]
+  );
+
+  // Otomatis aktif saat komponen dimuat dan REPEAT terus-menerus setiap 3 detik tanpa henti
   useEffect(() => {
-    if (totalSlides <= 1 || isHovered) return;
+    resetTimer();
 
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % totalSlides);
-    }, 3000);
+    // Pastikan timer tetap berjalan saat tab peramban aktif kembali
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        resetTimer();
+      }
+    };
 
-    return () => clearInterval(timer);
-  }, [totalSlides, currentIndex, isHovered]);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [resetTimer]);
 
   // Dukungan gestur geser (swipe) khusus layar sentuh smartphone
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -82,8 +112,6 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
   return (
     <section
       className="relative overflow-hidden border-b border-[#292929] bg-[#0A0A0A] min-h-[420px] sm:min-h-[500px] lg:min-h-[560px] flex items-end select-none"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
@@ -126,7 +154,7 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
           type="button"
           onClick={handlePrev}
           aria-label="Lihat film sebelumnya"
-          className="absolute left-2.5 sm:left-6 lg:left-8 top-[40%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="absolute left-2.5 sm:left-6 lg:left-8 top-[38%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
           <CaretLeft size={18} weight="bold" className="sm:hidden" />
           <CaretLeft size={24} weight="bold" className="hidden sm:block" />
@@ -139,7 +167,7 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
           type="button"
           onClick={handleNext}
           aria-label="Lihat film selanjutnya"
-          className="absolute right-2.5 sm:right-6 lg:right-8 top-[40%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="absolute right-2.5 sm:right-6 lg:right-8 top-[38%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
           <CaretRight size={18} weight="bold" className="sm:hidden" />
           <CaretRight size={24} weight="bold" className="hidden sm:block" />
@@ -213,7 +241,7 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
                 role="tab"
                 aria-selected={isActive}
                 aria-label={`Pindah ke ${movie.title} (${idx + 1} dari ${totalSlides})`}
-                onClick={() => setCurrentIndex(idx)}
+                onClick={() => handleSelectDot(idx)}
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
                   isActive
                     ? "w-5 sm:w-8 h-1.5 sm:h-2 bg-[#D9A52E] shadow-sm shadow-[#D9A52E]/50"
