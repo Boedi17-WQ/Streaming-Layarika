@@ -6,7 +6,6 @@ import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import {
-  FilmReel,
   FilmStrip,
   Television,
   House,
@@ -170,8 +169,15 @@ export function SiteHeader({ user }: SiteHeaderProps) {
               href="/"
               className="group flex items-center gap-2.5 transition hover:opacity-90"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1c1c1c] to-[#121212] border border-[#D9A52E]/30 text-[#D9A52E] shadow-sm transition group-hover:border-[#D9A52E] group-hover:scale-105">
-                <FilmReel size={22} weight="duotone" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1c1c1c] to-[#121212] border border-[#D9A52E]/30 shadow-sm transition group-hover:border-[#D9A52E] group-hover:scale-105 p-1.5 overflow-hidden">
+                <Image
+                  src="/images/layarrika-logo.png"
+                  alt="LayarRika Logo"
+                  width={24}
+                  height={24}
+                  priority
+                  className="object-contain"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="text-lg font-extrabold tracking-wider text-[#F5F5F5]">

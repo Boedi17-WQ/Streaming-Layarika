@@ -1,6 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Container } from "@/components/ui/Container";
-import { FilmReel } from "@phosphor-icons/react/dist/ssr";
 
 export function SiteFooter() {
   const currentYear = 2026;
@@ -12,8 +12,14 @@ export function SiteFooter() {
           {/* Brand & Tagline */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-[#171717] border border-[#D9A52E]/30 text-[#D9A52E]">
-                <FilmReel size={16} weight="duotone" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#171717] border border-[#D9A52E]/30 p-1 overflow-hidden">
+                <Image
+                  src="/images/layarrika-logo.png"
+                  alt="LayarRika Logo"
+                  width={20}
+                  height={20}
+                  className="object-contain"
+                />
               </div>
               <span className="text-base font-bold tracking-wide text-[#F5F5F5]">
                 LAYAR<span className="text-[#D9A52E]">RIKA</span>
