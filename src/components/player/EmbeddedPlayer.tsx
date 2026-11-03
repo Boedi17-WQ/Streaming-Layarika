@@ -21,6 +21,7 @@ import {
   CornersOut,
   ArrowSquareOut,
   ArrowLeft,
+  Question,
 } from "@phosphor-icons/react";
 import { recordWatchProgressAction } from "@/app/actions/history";
 import {
@@ -30,6 +31,7 @@ import {
 } from "@/app/actions/subscription";
 import { LoginRequiredModal } from "@/components/auth/LoginRequiredModal";
 import { PremiumRequiredModal, PremiumGateReason } from "@/components/subscription/PremiumRequiredModal";
+import { QuickHelpModal } from "@/components/help/QuickHelpModal";
 
 export interface EmbeddedPlayerProps {
   tmdbId: number;
@@ -116,6 +118,8 @@ export function EmbeddedPlayer({
 
   // State Modal Autentikasi Wajib Login (Addendum Tahap 9)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  // State Modal Panduan Cepat & Bantuan Pemutar
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState<boolean>(false);
 
   // State Modal Kuota Premium (Addendum Tahap 9)
   const [premiumModalState, setPremiumModalState] = useState<{
@@ -524,6 +528,18 @@ export function EmbeddedPlayer({
           <ArrowLeft size={16} weight="bold" />
         </button>
 
+        {/* Tombol Bantuan Mengambang (Floating Help Button ala Mobile App Referensi) */}
+        <button
+          type="button"
+          onClick={() => setIsHelpModalOpen(true)}
+          className="absolute top-3 right-3 z-30 flex flex-col items-center justify-center rounded-xl bg-black/60 px-2 py-1 text-white backdrop-blur-md border border-white/20 hover:bg-black/80 transition cursor-pointer active:scale-95 shadow-lg group"
+          aria-label="Bantuan Pemutar"
+          title="Panduan Pemutar & Tips Menonton"
+        >
+          <Question size={16} weight="bold" className="text-[#D9A52E] group-hover:scale-110 transition" />
+          <span className="text-[9px] font-semibold text-white/90 leading-tight">Help</span>
+        </button>
+
         {/* Loading Spinner saat memuat */}
         {isLoading && (
           <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#0A0A0A]/90 backdrop-blur-xs text-[#F5F5F5] transition-opacity duration-300">
@@ -871,6 +887,17 @@ export function EmbeddedPlayer({
             <CheckCircle size={14} weight={isCompleted ? "fill" : "regular"} className={isCompleted ? "text-emerald-400" : "text-[#737373]"} />
             <span className="hidden sm:inline">{isCompleted ? "Selesai" : "Tandai Selesai"}</span>
           </button>
+
+          {/* Tombol Bantuan Pemutar (Quick Help Modal) */}
+          <button
+            type="button"
+            onClick={() => setIsHelpModalOpen(true)}
+            title="Buka Bantuan & Panduan Pemutar"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 px-3 py-1.5 text-xs text-[#A3A3A3] hover:text-[#F5F5F5] transition cursor-pointer"
+          >
+            <Question size={14} weight="bold" className="text-[#D9A52E]" />
+            <span className="hidden sm:inline">Bantuan</span>
+          </button>
         </div>
       </div>
 
@@ -954,6 +981,14 @@ export function EmbeddedPlayer({
         consumedSeconds={movieEntitlement?.consumedSeconds || 3600}
         movieLimitSeconds={3600}
         customMessage={premiumModalState.message}
+      />
+
+      {/* 6. Modal Panduan Cepat & Bantuan Pemutar */}
+      <QuickHelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        mediaType={mediaType}
+        mediaTitle={title}
       />
     </div>
   );

@@ -26,6 +26,7 @@ import {
   Receipt,
   Printer,
   ArrowSquareOut,
+  Question,
 } from "@phosphor-icons/react/dist/ssr";
 
 export const metadata: Metadata = {
@@ -414,6 +415,28 @@ export default async function ProfilePage() {
             initialWatchlist={watchlistItems}
             initialHistory={historyItems}
           />
+        </div>
+
+        {/* Banner Pintasan Pusat Bantuan & FAQ */}
+        <div className="rounded-2xl border border-white/10 bg-[#121214] p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5 text-center sm:text-left">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D9A52E]/15 border border-[#D9A52E]/30 text-[#D9A52E]">
+              <Question size={20} weight="bold" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white">Butuh Bantuan atau Panduan Fitur?</h3>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                Pelajari panduan fitur streaming, cara memilih server, navigasi serial TV, dan faktur bukti pembayaran.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/help"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition shrink-0"
+          >
+            <span>Buka Pusat Bantuan</span>
+            <ArrowRight size={14} weight="bold" />
+          </Link>
         </div>
       </Container>
     </div>

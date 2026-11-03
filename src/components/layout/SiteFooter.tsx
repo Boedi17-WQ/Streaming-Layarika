@@ -41,6 +41,9 @@ export function SiteFooter() {
             <Link href="/pricing" className="hover:text-[#D9A52E] transition">
               VIP Member
             </Link>
+            <Link href="/help" className="hover:text-[#D9A52E] transition font-medium text-neutral-300">
+              Pusat Bantuan & FAQ
+            </Link>
           </div>
         </div>
 

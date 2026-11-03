@@ -21,6 +21,7 @@ import {
   Receipt,
   User,
   CaretDown,
+  Question,
 } from "@phosphor-icons/react";
 import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
 import { checkNavActive, NavItemMatch } from "@/lib/navigation/active-nav";
@@ -145,6 +146,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
   const vipMatch = checkNavActive(pathname, searchParamsType, "/pricing");
   const searchMatch = checkNavActive(pathname, searchParamsType, "/search");
   const profileMatch = checkNavActive(pathname, searchParamsType, "/profile");
+  const helpMatch = checkNavActive(pathname, searchParamsType, "/help");
 
   // Pada halaman detail tontonan (Movie/TV), sembunyikan header di mobile agar tampilan bersih & edge-to-edge
   const isDetailPage = pathname.startsWith("/tv/") || pathname.startsWith("/movie/");
@@ -281,6 +283,20 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                 className={searchMatch.isExactActive ? "text-[#D9A52E]" : undefined}
               />
               <span className="hidden sm:inline">Cari judul...</span>
+            </Link>
+
+            {/* Tombol Akses Cepat Bantuan & Panduan */}
+            <Link
+              href="/help"
+              aria-label="Pusat Bantuan & Panduan"
+              title="Pusat Bantuan & Panduan LayarRika"
+              className={`flex items-center justify-center h-8 w-8 rounded-xl border text-xs transition cursor-pointer ${
+                helpMatch.isExactActive
+                  ? "border-[#D9A52E] bg-[#D9A52E]/15 text-[#D9A52E] shadow-xs"
+                  : "border-[#292929] bg-[#141414] text-[#A3A3A3] hover:border-[#D9A52E]/40 hover:text-[#D9A52E]"
+              }`}
+            >
+              <Question size={16} weight={helpMatch.isExactActive ? "bold" : "regular"} />
             </Link>
 
             {/* Menu Pengguna (Dropdown Profil Terpadu ala HBO Max / Netflix) */}
@@ -455,6 +471,20 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                         <span>Pengaturan Akun & Profil</span>
                       </Link>
 
+                      {/* Tautan Pusat Bantuan & Panduan */}
+                      <Link
+                        href="/help"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition ${
+                          helpMatch.isExactActive
+                            ? "bg-[#D9A52E]/15 text-[#D9A52E] font-semibold"
+                            : "text-[#A3A3A3] hover:bg-[#1a1a1a] hover:text-[#F5F5F5]"
+                        }`}
+                      >
+                        <Question size={16} weight={helpMatch.isExactActive ? "bold" : "regular"} />
+                        <span>Pusat Bantuan & Panduan</span>
+                      </Link>
+
                       {user.role === "ADMIN" && (
                         <Link
                           href="/admin"
@@ -552,6 +582,16 @@ export function SiteHeader({ user }: SiteHeaderProps) {
               <span>VIP</span>
             </Link>
           )}
+
+          {/* 6. Bantuan */}
+          <Link
+            href="/help"
+            aria-current={helpMatch.isExactActive ? "page" : undefined}
+            className={getMobileTabClass(helpMatch)}
+          >
+            <Question size={13} weight={helpMatch.isExactActive ? "fill" : "regular"} className={helpMatch.isExactActive ? "text-[#D9A52E]" : ""} />
+            <span>Bantuan</span>
+          </Link>
         </nav>
       </header>
 

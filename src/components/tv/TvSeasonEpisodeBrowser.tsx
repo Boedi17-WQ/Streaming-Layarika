@@ -655,9 +655,17 @@ export function TvSeasonEpisodeBrowser({
               </div>
 
               {showResourceHelp && (
-                <p className="text-[11px] text-[#A1A1AA] bg-[#121215] border border-[#27272A] rounded-lg p-2.5 leading-relaxed">
-                  Streaming otomatis dialirkan dari server multi-sumber berkecepatan tinggi. Episode 1–5 gratis, episode 6 ke atas dapat diakses eksklusif oleh member VIP.
-                </p>
+                <div className="text-[11px] text-[#A1A1AA] bg-[#121215] border border-[#27272A] rounded-xl p-3 leading-relaxed space-y-1">
+                  <p>
+                    Streaming otomatis dialirkan dari server multi-sumber berkecepatan tinggi. Episode 1–5 gratis, episode 6 ke atas dapat diakses eksklusif oleh member VIP.
+                  </p>
+                  <p>
+                    <Link href="/help" className="text-[#D9A52E] hover:underline font-semibold inline-flex items-center gap-1">
+                      <span>Buka Pusat Bantuan & Panduan Lengkap</span>
+                      <span>&rarr;</span>
+                    </Link>
+                  </p>
+                </div>
               )}
 
               {/* Selector Season & Label Audio/Kualitas */}
