@@ -149,6 +149,7 @@ async function SearchCatalogLoader({ searchParams }: SearchPageProps) {
 
   return (
     <CatalogBrowser
+      key={`${initialQuery}-${initialType}-${initialGenreId ?? "all"}-${initialPage}`}
       initialMovies={initialMovies}
       initialTvShows={initialTvShows}
       initialTotalResults={initialTotalResults}

@@ -188,6 +188,10 @@ export function CatalogBrowser({
     setQuery(nextQuery);
     setIsTyping(true);
 
+    if (nextQuery.trim()) {
+      setViewMode("list");
+    }
+
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }

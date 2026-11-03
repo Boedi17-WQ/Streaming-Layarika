@@ -2,20 +2,16 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
   MagnifyingGlass,
   X,
   Trash,
   ClockCounterClockwise,
-  Star,
-  FilmReel,
-  Television,
   SpinnerGap,
   ArrowRight,
-  Play,
 } from "@phosphor-icons/react";
 import { Movie } from "@/types/movie";
+import { SearchResultListItem } from "./SearchResultListItem";
 
 interface QuickSearchModalProps {
   isOpen: boolean;
@@ -119,22 +115,23 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
     });
   };
 
-  // Eksekusi pencarian ke halaman katalog
+  // Eksekusi pencarian ke daftar film
   const executeSearch = (searchTerm: string) => {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) return;
+
+    saveToHistory(trimmed);
+    setQuery(trimmed);
+  };
+
+  // Navigasi ke halaman katalog penuh
+  const handleOpenFullSearch = (searchTerm: string) => {
     const trimmed = searchTerm.trim();
     if (!trimmed) return;
 
     saveToHistory(trimmed);
     onClose();
     router.push(`/search?q=${encodeURIComponent(trimmed)}`);
-  };
-
-  // Navigasi langsung ke detail film saat hasil diklik
-  const handleSelectMovie = (movie: Movie) => {
-    saveToHistory(movie.title);
-    onClose();
-    const href = movie.mediaType === "movie" ? `/movie/${movie.id}` : `/tv/${movie.id}`;
-    router.push(href);
   };
 
   // Handle submit form pencarian
@@ -198,7 +195,7 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
     >
       <div
         ref={modalRef}
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-[#2a2a2a] bg-[#121212] shadow-2xl shadow-black/90 flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-150"
+        className="w-full max-w-2xl overflow-hidden rounded-2xl border border-[#2a2a2a] bg-[#121212] shadow-2xl shadow-black/90 flex flex-col max-h-[88vh] animate-in zoom-in-95 duration-150"
       >
         {/* 1. Bar Input Pencarian di Bagian Atas */}
         <div className="p-3 sm:p-4 border-b border-[#222222] bg-[#161616]">
@@ -344,81 +341,24 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
                   <span>Mencari film & serial...</span>
                 </div>
               ) : liveResults.length > 0 ? (
-                <div className="space-y-2">
-                  {liveResults.map((movie) => {
-                    const isMovie = movie.mediaType === "movie";
-
-                    return (
-                      <div
-                        key={movie.id}
-                        onClick={() => handleSelectMovie(movie)}
-                        className="group flex items-center justify-between gap-3 rounded-xl p-2.5 hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-emerald-500/20"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Poster Thumbnail dengan Badge Free */}
-                          <div className="relative aspect-[2/3] w-12 sm:w-14 shrink-0 overflow-hidden rounded-lg bg-[#222]">
-                            {movie.posterPath ? (
-                              <Image
-                                src={movie.posterPath}
-                                alt={movie.title}
-                                fill
-                                unoptimized
-                                sizes="56px"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-[#555]">
-                                {isMovie ? <FilmReel size={18} /> : <Television size={18} />}
-                              </div>
-                            )}
-                            <span className="absolute top-1 right-1 rounded-xs bg-emerald-500 px-1 py-0.2 text-[8px] font-black uppercase text-black">
-                              Free
-                            </span>
-                          </div>
-
-                          {/* Info Judul & Metadata */}
-                          <div className="flex-1 min-w-0">
-                            <span className="text-[10px] font-bold text-[#737373] uppercase tracking-wider block">
-                              {isMovie ? "Movie" : "Drama"}
-                            </span>
-                            <h4 className="truncate text-sm sm:text-base font-bold text-emerald-400 group-hover:text-emerald-300 transition">
-                              {movie.title}
-                            </h4>
-                            <div className="flex items-center gap-2 text-xs text-[#737373] mt-0.5">
-                              <span>Year: {movie.releaseYear || "—"}</span>
-                              {movie.genres && movie.genres.length > 0 && (
-                                <span className="truncate max-w-[120px]">• {movie.genres[0]}</span>
-                              )}
-                              {movie.rating > 0 && (
-                                <span className="flex items-center gap-0.5 font-semibold text-[#D9A52E]">
-                                  <Star size={11} weight="fill" />
-                                  <span>{movie.rating.toFixed(1)}</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Tombol Watch Now */}
-                        <div className="shrink-0 pl-1">
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-black shadow-xs transition group-hover:bg-emerald-400">
-                            <Play size={11} weight="fill" />
-                            <span>Watch</span>
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="space-y-4">
+                  {liveResults.map((movie) => (
+                    <SearchResultListItem
+                      key={movie.id}
+                      movie={movie}
+                      query={query}
+                    />
+                  ))}
 
                   {/* Tombol Lihat Seluruh Hasil */}
                   <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => executeSearch(query)}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#D9A52E]/10 border border-[#D9A52E]/30 px-4 py-2.5 text-xs font-bold text-[#D9A52E] hover:bg-[#D9A52E]/20 transition cursor-pointer"
+                      onClick={() => handleOpenFullSearch(query)}
+                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-2.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/25 transition cursor-pointer"
                     >
                       <MagnifyingGlass size={14} weight="bold" />
-                      <span>Lihat Semua Hasil untuk &quot;{query}&quot;</span>
+                      <span>Buka Hasil Lengkap di Halaman Katalog untuk &quot;{query}&quot;</span>
                     </button>
                   </div>
                 </div>
