@@ -39,13 +39,13 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
     setCurrentIndex((prev) => (prev + 1) % totalSlides);
   }, [totalSlides]);
 
-  // Otomatis berpindah slide dan REPEAT tanpa henti (Infinite Loop setiap 5 detik)
+  // Otomatis berpindah slide dan REPEAT setiap 3 detik (sesuai instruksi pengguna)
   useEffect(() => {
     if (totalSlides <= 1 || isHovered) return;
 
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % totalSlides);
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(timer);
   }, [totalSlides, currentIndex, isHovered]);
@@ -81,7 +81,7 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
 
   return (
     <section
-      className="relative overflow-hidden border-b border-[#292929] bg-[#0A0A0A] min-h-[380px] sm:min-h-[480px] lg:min-h-[540px] flex items-center select-none"
+      className="relative overflow-hidden border-b border-[#292929] bg-[#0A0A0A] min-h-[420px] sm:min-h-[500px] lg:min-h-[560px] flex items-end select-none"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onTouchStart={handleTouchStart}
@@ -113,42 +113,42 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
             ) : (
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(217,165,46,0.15),rgba(10,10,10,0))]" />
             )}
-            {/* Gradien Gelap Pelindung Keterbacaan Teks di Mobile & Desktop */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/85 to-transparent sm:via-[#0A0A0A]/75" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/40 to-transparent" />
+            {/* Gradien Gelap Bertingkat: Melindungi Keterbacaan Teks di Bagian Bawah */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/60 to-transparent" />
           </div>
         );
       })}
 
-      {/* 2. Tombol Navigasi Panah Kiri (<) - Responsif di Ponsel & Desktop */}
+      {/* 2. Tombol Navigasi Panah Kiri (<) - Diposisikan di Tengah Atas agar Tidak Bertabrakan dengan Teks */}
       {totalSlides > 1 && (
         <button
           type="button"
           onClick={handlePrev}
           aria-label="Lihat film sebelumnya"
-          className="absolute left-2 sm:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="absolute left-2.5 sm:left-6 lg:left-8 top-[40%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
           <CaretLeft size={18} weight="bold" className="sm:hidden" />
           <CaretLeft size={24} weight="bold" className="hidden sm:block" />
         </button>
       )}
 
-      {/* 3. Tombol Navigasi Panah Kanan (>) - Responsif di Ponsel & Desktop */}
+      {/* 3. Tombol Navigasi Panah Kanan (>) - Diposisikan di Tengah Atas agar Tidak Bertabrakan dengan Teks */}
       {totalSlides > 1 && (
         <button
           type="button"
           onClick={handleNext}
           aria-label="Lihat film selanjutnya"
-          className="absolute right-2 sm:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="absolute right-2.5 sm:right-6 lg:right-8 top-[40%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
           <CaretRight size={18} weight="bold" className="sm:hidden" />
           <CaretRight size={24} weight="bold" className="hidden sm:block" />
         </button>
       )}
 
-      {/* 4. Konten Utama: Judul Film, Metadata (Rating • Tahun • Genre), dan Tombol Mulai Nonton */}
-      <Container className="relative z-10 pt-10 pb-14 sm:pt-20 sm:pb-24">
-        <div className="max-w-3xl space-y-3.5 sm:space-y-5 px-10 sm:px-16 lg:px-6">
+      {/* 4. Konten Utama: Ditata Bersih di Bagian Bawah Layar (Bottom-Aligned) Bebas Tabrakan */}
+      <Container className="relative z-10 w-full pb-8 sm:pb-12 lg:pb-14 pt-20 sm:pt-28">
+        <div className="max-w-3xl space-y-3 sm:space-y-4 px-4 sm:px-8 lg:px-10">
           {/* A. Judul Film */}
           <h1
             key={`title-${activeMovie.id}`}
@@ -197,10 +197,10 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
         </div>
       </Container>
 
-      {/* 5. Indikator Titik Navigasi Slider (Sesuai Referensi Gambar di Kanan Bawah) */}
+      {/* 5. Indikator Titik Navigasi Slider di Kanan Bawah */}
       {totalSlides > 1 && (
         <div
-          className="absolute bottom-4 right-3 sm:bottom-8 sm:right-10 lg:right-14 z-20 flex items-center gap-1 sm:gap-2"
+          className="absolute bottom-5 right-4 sm:bottom-8 sm:right-8 lg:right-12 z-20 flex items-center gap-1 sm:gap-2"
           role="tablist"
           aria-label="Pilih film populer"
         >
@@ -216,8 +216,8 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
                 onClick={() => setCurrentIndex(idx)}
                 className={`transition-all duration-300 rounded-full cursor-pointer ${
                   isActive
-                    ? "w-5 sm:w-8 h-1.5 sm:h-2.5 bg-[#D9A52E] shadow-sm shadow-[#D9A52E]/50"
-                    : "w-1.5 sm:w-2.5 h-1.5 sm:h-2.5 bg-white/30 hover:bg-white/70"
+                    ? "w-5 sm:w-8 h-1.5 sm:h-2 bg-[#D9A52E] shadow-sm shadow-[#D9A52E]/50"
+                    : "w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/30 hover:bg-white/70"
                 }`}
               />
             );
