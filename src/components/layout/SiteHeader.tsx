@@ -23,6 +23,7 @@ import {
   Question,
 } from "@phosphor-icons/react";
 import { LogoutConfirmModal } from "@/components/auth/LogoutConfirmModal";
+import { QuickSearchModal } from "@/components/search/QuickSearchModal";
 import { checkNavActive, NavItemMatch } from "@/lib/navigation/active-nav";
 
 export interface SiteHeaderUser {
@@ -102,6 +103,7 @@ function getMobileTabClass(match: NavItemMatch, isVip = false): string {
 export function SiteHeader({ user }: SiteHeaderProps) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const pathname = usePathname();
@@ -271,58 +273,38 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             </nav>
           </div>
 
-          {/* Sisi Tengah (Khusus Mobile ala iQIYI / WeTV): Search Capsule Bar */}
-          <Link
-            href="/search"
-            aria-label="Cari Film atau Serial"
-            className="flex md:hidden flex-1 items-center justify-between min-w-0 max-w-[190px] xs:max-w-[220px] mx-1 rounded-full bg-[#181818] border border-white/10 px-3 py-1.5 text-xs text-[#888888] shadow-inner transition hover:border-[#D9A52E]/40"
-          >
-            <span className="truncate text-[11px] text-[#888888]">Cari film atau serial...</span>
-            <MagnifyingGlass size={13} className="text-[#D9A52E] shrink-0 ml-1.5" />
-          </Link>
-
-          {/* Sisi Kanan: Desktop Search & Help + VIP & Profile (Responsif Mobile & Desktop) */}
-          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-            {/* Desktop Search Button */}
-            <Link
-              href="/search"
+          {/* Sisi Kanan: Pencarian, Bantuan & Profil Pengguna */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Tombol Pencarian Interaktif (Membuka Modal Tampilan Search Populer & Riwayat) */}
+            <button
+              type="button"
+              onClick={() => setSearchModalOpen(true)}
               aria-label="Cari Film atau Serial"
-              aria-current={searchMatch.isExactActive ? "page" : undefined}
-              className={`hidden md:flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition ${
-                searchMatch.isExactActive
+              className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition cursor-pointer ${
+                searchModalOpen || searchMatch.isExactActive
                   ? "border-[#D9A52E] bg-[#D9A52E]/10 text-[#D9A52E] font-semibold shadow-xs shadow-[#D9A52E]/10"
                   : "border-[#292929] bg-[#141414] text-[#A3A3A3] hover:border-[#D9A52E]/40 hover:text-[#F5F5F5]"
               }`}
             >
               <MagnifyingGlass
                 size={16}
-                className={searchMatch.isExactActive ? "text-[#D9A52E]" : undefined}
+                className={searchModalOpen || searchMatch.isExactActive ? "text-[#D9A52E]" : undefined}
               />
-              <span>Cari judul...</span>
-            </Link>
+              <span className="hidden sm:inline">Cari judul...</span>
+            </button>
 
-            {/* Desktop Help Button */}
+            {/* Tombol Akses Cepat Bantuan & Panduan */}
             <Link
               href="/help"
               aria-label="Pusat Bantuan & Panduan"
               title="Pusat Bantuan & Panduan LayarRika"
-              className={`hidden md:flex items-center justify-center h-8 w-8 rounded-xl border text-xs transition cursor-pointer ${
+              className={`flex items-center justify-center h-8 w-8 rounded-xl border text-xs transition cursor-pointer ${
                 helpMatch.isExactActive
                   ? "border-[#D9A52E] bg-[#D9A52E]/15 text-[#D9A52E] shadow-xs"
                   : "border-[#292929] bg-[#141414] text-[#A3A3A3] hover:border-[#D9A52E]/40 hover:text-[#D9A52E]"
               }`}
             >
               <Question size={16} weight={helpMatch.isExactActive ? "bold" : "regular"} />
-            </Link>
-
-            {/* Mobile VIP Button (Sisi Kanan ala iQIYI) */}
-            <Link
-              href="/pricing"
-              aria-label="Paket Langganan VIP"
-              className="flex md:hidden items-center gap-1 rounded-lg bg-gradient-to-r from-[#F0C05A] via-[#D9A52E] to-[#B3821C] px-2.5 py-1 text-[11px] font-black text-[#0A0A0A] shadow-sm shadow-[#D9A52E]/25 transition hover:brightness-110 active:scale-95 shrink-0"
-            >
-              <Crown size={13} weight="fill" />
-              <span>VIP</span>
             </Link>
 
             {/* Menu Pengguna (Dropdown Profil Terpadu ala HBO Max / Netflix) */}
@@ -562,30 +544,22 @@ export function SiteHeader({ user }: SiteHeaderProps) {
           </div>
         </Container>
 
-        {/* Mobile Subnav Bar — Kategori Scroll Horizontal ala iQIYI / WeTV */}
+        {/* Mobile Subnav Bar — Kategori Scroll Horizontal Ringkas & Bersih */}
         <nav
           aria-label="Navigasi Kategori Seluler"
           className="md:hidden flex items-center gap-1.5 overflow-x-auto px-4 py-2 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-xl scrollbar-none"
         >
-          {/* 1. Untuk Anda / For You */}
+          {/* 1. Beranda */}
           <Link
             href="/"
             aria-current={homeMatch.isExactActive ? "page" : undefined}
             className={getMobileTabClass(homeMatch)}
           >
             <House size={13} weight={homeMatch.isExactActive ? "fill" : "regular"} className={homeMatch.isExactActive ? "text-[#D9A52E]" : ""} />
-            <span>Untuk Anda</span>
+            <span>Beranda</span>
           </Link>
 
-          {/* 2. Trending */}
-          <Link
-            href="/catalog?sort=popularity.desc"
-            className="flex items-center gap-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5 transition-all"
-          >
-            <span>Trending</span>
-          </Link>
-
-          {/* 3. Series */}
+          {/* 2. Series */}
           <Link
             href="/catalog?type=tv"
             aria-current={tvMatch.isExactActive ? "page" : undefined}
@@ -595,7 +569,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <span>Series</span>
           </Link>
 
-          {/* 4. Movies */}
+          {/* 3. Movies */}
           <Link
             href="/catalog?type=movie"
             aria-current={movieMatch.isExactActive ? "page" : undefined}
@@ -605,7 +579,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <span>Movies</span>
           </Link>
 
-          {/* 5. Katalog */}
+          {/* 4. Katalog */}
           <Link
             href="/catalog"
             aria-current={catalogMatch.isExactActive ? "page" : undefined}
@@ -615,7 +589,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <span>Katalog</span>
           </Link>
 
-          {/* 6. Bantuan */}
+          {/* 5. Bantuan */}
           <Link
             href="/help"
             aria-current={helpMatch.isExactActive ? "page" : undefined}
@@ -626,6 +600,12 @@ export function SiteHeader({ user }: SiteHeaderProps) {
           </Link>
         </nav>
       </header>
+
+      {/* Modal Tampilan Search Populer & Riwayat (Interaktif) */}
+      <QuickSearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+      />
 
       {/* Modal Konfirmasi Keluar Akun */}
       <LogoutConfirmModal
