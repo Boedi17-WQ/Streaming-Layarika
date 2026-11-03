@@ -52,7 +52,13 @@ export const metadata: Metadata = {
       "Temukan Ceritamu. Nikmati Setiap Episode. Platform katalog film dan serial sinematik dengan visual modern dan pengalaman menonton aman.",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "256x256" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
