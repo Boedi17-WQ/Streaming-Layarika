@@ -3,6 +3,7 @@ import { Container } from "@/components/ui/Container";
 import { HeroSection } from "@/components/home/HeroSection";
 import { MovieSection } from "@/components/home/MovieSection";
 import { ResumePlaybackSection } from "@/components/home/ResumePlaybackSection";
+import { VipPromoBanner } from "@/components/home/VipPromoBanner";
 import {
   isTmdbConfigured,
   getPopularMovies,
@@ -122,6 +123,9 @@ export default async function HomePage() {
             viewAllHref="/catalog?type=movie&sort=primary_release_date.desc"
           />
         </div>
+
+        {/* 4.5. VIP Promo Banner ala Streaming App Mobile */}
+        <VipPromoBanner />
 
         {/* 5. Section Film Rating Tertinggi */}
         <div className="scroll-mt-24">

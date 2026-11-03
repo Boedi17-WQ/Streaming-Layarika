@@ -71,39 +71,39 @@ export function MovieCard({ movie }: MovieCardProps) {
 
         {/* Floating Rating Badge */}
         {movie.rating > 0 && (
-          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-md bg-[#0A0A0A]/90 px-2 py-0.5 text-xs font-bold text-[#F5F5F5] border border-[#292929] shadow-md backdrop-blur-sm z-10">
-            <Star size={13} weight="fill" className="text-[#D9A52E]" />
+          <div className="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 flex items-center gap-0.5 sm:gap-1 rounded-md bg-[#0A0A0A]/90 px-1.5 py-0.5 sm:px-2 sm:py-0.5 text-[10px] sm:text-xs font-bold text-[#F5F5F5] border border-[#292929] shadow-md backdrop-blur-sm z-10">
+            <Star size={11} weight="fill" className="text-[#D9A52E]" />
             <span>{movie.rating.toFixed(1)}</span>
           </div>
         )}
 
         {/* Floating Media Type Badge (jika ada gambar poster) */}
         {movie.posterPath && (
-          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded bg-[#0A0A0A]/85 px-1.5 py-0.5 text-[10px] font-semibold text-[#A3A3A3] border border-[#292929] backdrop-blur-sm z-10">
+          <div className="absolute bottom-2 left-2 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 rounded bg-[#0A0A0A]/85 px-1.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-[#A3A3A3] border border-[#292929] backdrop-blur-sm z-10">
             {isMovie ? "Film" : "Serial"}
           </div>
         )}
 
         {/* Hover Overlay with Play Button Cue */}
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100 z-10">
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-xl transition-transform duration-300 group-hover:scale-110">
-            <Play size={18} weight="fill" className="ml-0.5" />
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-[#D9A52E] text-[#0A0A0A] shadow-xl transition-transform duration-300 group-hover:scale-110">
+            <Play size={16} weight="fill" className="ml-0.5" />
           </div>
         </div>
       </div>
 
       {/* Movie Information Below Card */}
-      <div className="flex flex-1 flex-col justify-between p-3.5 space-y-2">
+      <div className="flex flex-1 flex-col justify-between p-2 sm:p-3.5 space-y-1 sm:space-y-2">
         <div>
-          <h3 className="line-clamp-1 text-sm font-semibold text-[#F5F5F5] transition group-hover:text-[#D9A52E]">
+          <h3 className="line-clamp-2 sm:line-clamp-1 text-xs sm:text-sm font-semibold text-[#F5F5F5] transition group-hover:text-[#D9A52E] leading-snug">
             {movie.title}
           </h3>
-          <p className="line-clamp-2 mt-1 text-xs text-[#A3A3A3] leading-relaxed">
+          <p className="hidden sm:line-clamp-2 mt-1 text-xs text-[#A3A3A3] leading-relaxed">
             {movie.overview}
           </p>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t border-[#222222] text-[11px] text-[#737373]">
+        <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-[#222222] text-[10px] sm:text-[11px] text-[#737373]">
           <span className="line-clamp-1">{movie.genres.slice(0, 2).join(", ")}</span>
           <span className="shrink-0 font-medium">
             {movie.releaseYear || "—"}

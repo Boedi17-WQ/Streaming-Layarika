@@ -148,35 +148,33 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
         );
       })}
 
-      {/* 2. Tombol Navigasi Panah Kiri (<) - Diposisikan di Tengah Atas agar Tidak Bertabrakan dengan Teks */}
+      {/* 2. Tombol Navigasi Panah Kiri (<) - Khusus Desktop (Mobile Menggunakan Swipe & Dots) */}
       {totalSlides > 1 && (
         <button
           type="button"
           onClick={handlePrev}
           aria-label="Lihat film sebelumnya"
-          className="absolute left-2.5 sm:left-6 lg:left-8 top-[38%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="hidden sm:flex absolute left-4 lg:left-8 top-[40%] -translate-y-1/2 z-20 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
-          <CaretLeft size={18} weight="bold" className="sm:hidden" />
-          <CaretLeft size={24} weight="bold" className="hidden sm:block" />
+          <CaretLeft size={22} weight="bold" />
         </button>
       )}
 
-      {/* 3. Tombol Navigasi Panah Kanan (>) - Diposisikan di Tengah Atas agar Tidak Bertabrakan dengan Teks */}
+      {/* 3. Tombol Navigasi Panah Kanan (>) - Khusus Desktop (Mobile Menggunakan Swipe & Dots) */}
       {totalSlides > 1 && (
         <button
           type="button"
           onClick={handleNext}
           aria-label="Lihat film selanjutnya"
-          className="absolute right-2.5 sm:right-6 lg:right-8 top-[38%] -translate-y-1/2 z-20 flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
+          className="hidden sm:flex absolute right-4 lg:right-8 top-[40%] -translate-y-1/2 z-20 h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md border border-white/20 hover:bg-black/90 hover:border-[#D9A52E] hover:text-[#D9A52E] hover:scale-105 active:scale-95 transition shadow-2xl cursor-pointer"
         >
-          <CaretRight size={18} weight="bold" className="sm:hidden" />
-          <CaretRight size={24} weight="bold" className="hidden sm:block" />
+          <CaretRight size={22} weight="bold" />
         </button>
       )}
 
-      {/* 4. Konten Utama: Ditata Bersih di Bagian Bawah Layar (Bottom-Aligned) Bebas Tabrakan */}
-      <Container className="relative z-10 w-full pb-8 sm:pb-12 lg:pb-14 pt-20 sm:pt-28">
-        <div className="max-w-3xl space-y-3 sm:space-y-4 px-4 sm:px-8 lg:px-10">
+      {/* 4. Konten Utama: Ditata Bersih di Bagian Bawah Layar (Bottom-Aligned) */}
+      <Container className="relative z-10 w-full pb-6 sm:pb-12 lg:pb-14 pt-16 sm:pt-28">
+        <div className="max-w-3xl space-y-2.5 sm:space-y-4 sm:px-4 lg:px-6">
           {/* A. Judul Film */}
           <h1
             key={`title-${activeMovie.id}`}
@@ -213,10 +211,10 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
           </div>
 
           {/* C. Tombol Mulai Nonton */}
-          <div className="pt-1.5 sm:pt-2">
+          <div className="pt-1 sm:pt-2">
             <Link
               href={`${detailHref}#player-section`}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-gradient-to-r from-[#D9A52E] to-[#b3821c] px-4 py-2.5 sm:px-6 sm:py-3 text-xs sm:text-sm font-bold text-[#0A0A0A] shadow-lg shadow-[#D9A52E]/25 transition hover:from-[#e5b33d] hover:to-[#c49226] hover:border-[#e5b33d] active:scale-[0.98]"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#D9A52E] bg-gradient-to-r from-[#D9A52E] to-[#b3821c] px-4 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-bold text-[#0A0A0A] shadow-lg shadow-[#D9A52E]/25 transition hover:from-[#e5b33d] hover:to-[#c49226] hover:border-[#e5b33d] active:scale-[0.98]"
             >
               <Play size={16} weight="fill" />
               <span>Mulai Nonton</span>
@@ -228,7 +226,7 @@ export function HeroSection({ featuredMovie, movies }: HeroSectionProps) {
       {/* 5. Indikator Titik Navigasi Slider di Kanan Bawah */}
       {totalSlides > 1 && (
         <div
-          className="absolute bottom-5 right-4 sm:bottom-8 sm:right-8 lg:right-12 z-20 flex items-center gap-1 sm:gap-2"
+          className="absolute bottom-4 right-4 sm:bottom-8 sm:right-8 lg:right-12 z-20 flex items-center gap-1 sm:gap-2"
           role="tablist"
           aria-label="Pilih film populer"
         >

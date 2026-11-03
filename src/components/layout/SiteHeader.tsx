@@ -161,15 +161,15 @@ export function SiteHeader({ user }: SiteHeaderProps) {
           <SearchParamsWatcher onTypeChange={handleTypeChange} />
         </Suspense>
 
-        <Container className="flex h-16 items-center justify-between">
+        <Container className="flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-4">
           {/* Brand Logo & Navigasi Utama */}
-          <div className="flex items-center gap-8 lg:gap-10">
+          <div className="flex items-center gap-8 lg:gap-10 shrink-0">
             {/* Brand Logo */}
             <Link
               href="/"
-              className="group flex items-center gap-2.5 transition hover:opacity-90"
+              className="group flex items-center gap-2 sm:gap-2.5 transition hover:opacity-90"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1c1c1c] to-[#121212] border border-[#D9A52E]/30 shadow-sm transition group-hover:border-[#D9A52E] group-hover:scale-105 p-1.5 overflow-hidden">
+              <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#1c1c1c] to-[#121212] border border-[#D9A52E]/30 shadow-sm transition group-hover:border-[#D9A52E] group-hover:scale-105 p-1.5 overflow-hidden">
                 <Image
                   src="/images/layarrika-logo.png"
                   alt="LayarRika Logo"
@@ -180,10 +180,10 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                 />
               </div>
               <div className="flex flex-col">
-                <span className="text-lg font-extrabold tracking-wider text-[#F5F5F5]">
+                <span className="text-base sm:text-lg font-extrabold tracking-wider text-[#F5F5F5] leading-none sm:leading-tight">
                   LAYAR<span className="text-[#D9A52E]">RIKA</span>
                 </span>
-                <span className="text-[10px] uppercase tracking-widest text-[#737373] -mt-1 font-semibold">
+                <span className="text-[9px] sm:text-[10px] uppercase tracking-widest text-[#737373] -mt-0.5 sm:-mt-1 font-semibold hidden xs:block">
                   Sinematik
                 </span>
               </div>
@@ -271,14 +271,24 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             </nav>
           </div>
 
-          {/* Sisi Kanan: Pencarian Ringkas & Menu Akun Profil */}
-          <div className="flex items-center gap-3">
-            {/* Tombol Pencarian Ramping */}
+          {/* Sisi Tengah (Khusus Mobile ala iQIYI / WeTV): Search Capsule Bar */}
+          <Link
+            href="/search"
+            aria-label="Cari Film atau Serial"
+            className="flex md:hidden flex-1 items-center justify-between min-w-0 max-w-[190px] xs:max-w-[220px] mx-1 rounded-full bg-[#181818] border border-white/10 px-3 py-1.5 text-xs text-[#888888] shadow-inner transition hover:border-[#D9A52E]/40"
+          >
+            <span className="truncate text-[11px] text-[#888888]">Cari film atau serial...</span>
+            <MagnifyingGlass size={13} className="text-[#D9A52E] shrink-0 ml-1.5" />
+          </Link>
+
+          {/* Sisi Kanan: Desktop Search & Help + VIP & Profile (Responsif Mobile & Desktop) */}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Desktop Search Button */}
             <Link
               href="/search"
               aria-label="Cari Film atau Serial"
               aria-current={searchMatch.isExactActive ? "page" : undefined}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition ${
+              className={`hidden md:flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition ${
                 searchMatch.isExactActive
                   ? "border-[#D9A52E] bg-[#D9A52E]/10 text-[#D9A52E] font-semibold shadow-xs shadow-[#D9A52E]/10"
                   : "border-[#292929] bg-[#141414] text-[#A3A3A3] hover:border-[#D9A52E]/40 hover:text-[#F5F5F5]"
@@ -288,21 +298,31 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                 size={16}
                 className={searchMatch.isExactActive ? "text-[#D9A52E]" : undefined}
               />
-              <span className="hidden sm:inline">Cari judul...</span>
+              <span>Cari judul...</span>
             </Link>
 
-            {/* Tombol Akses Cepat Bantuan & Panduan */}
+            {/* Desktop Help Button */}
             <Link
               href="/help"
               aria-label="Pusat Bantuan & Panduan"
               title="Pusat Bantuan & Panduan LayarRika"
-              className={`flex items-center justify-center h-8 w-8 rounded-xl border text-xs transition cursor-pointer ${
+              className={`hidden md:flex items-center justify-center h-8 w-8 rounded-xl border text-xs transition cursor-pointer ${
                 helpMatch.isExactActive
                   ? "border-[#D9A52E] bg-[#D9A52E]/15 text-[#D9A52E] shadow-xs"
                   : "border-[#292929] bg-[#141414] text-[#A3A3A3] hover:border-[#D9A52E]/40 hover:text-[#D9A52E]"
               }`}
             >
               <Question size={16} weight={helpMatch.isExactActive ? "bold" : "regular"} />
+            </Link>
+
+            {/* Mobile VIP Button (Sisi Kanan ala iQIYI) */}
+            <Link
+              href="/pricing"
+              aria-label="Paket Langganan VIP"
+              className="flex md:hidden items-center gap-1 rounded-lg bg-gradient-to-r from-[#F0C05A] via-[#D9A52E] to-[#B3821C] px-2.5 py-1 text-[11px] font-black text-[#0A0A0A] shadow-sm shadow-[#D9A52E]/25 transition hover:brightness-110 active:scale-95 shrink-0"
+            >
+              <Crown size={13} weight="fill" />
+              <span>VIP</span>
             </Link>
 
             {/* Menu Pengguna (Dropdown Profil Terpadu ala HBO Max / Netflix) */}
@@ -314,14 +334,14 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                   aria-expanded={userDropdownOpen}
                   aria-haspopup="true"
                   title="Buka Menu Profil & Koleksi Anda"
-                  className={`group flex items-center gap-2 rounded-full p-1 sm:pr-2.5 transition border ${
+                  className={`group flex items-center gap-1.5 sm:gap-2 rounded-full p-0.5 sm:p-1 sm:pr-2.5 transition border ${
                     userDropdownOpen
                       ? "border-[#D9A52E] bg-[#1a1710]"
                       : "border-transparent hover:border-[#292929] hover:bg-[#141414]"
                   }`}
                 >
                   <div
-                    className={`relative h-8 w-8 sm:h-7 sm:w-7 shrink-0 overflow-hidden rounded-full bg-[#171717] transition ${
+                    className={`relative h-7 w-7 sm:h-7 sm:w-7 shrink-0 overflow-hidden rounded-full bg-[#171717] transition ${
                       user.isVip
                         ? "ring-2 ring-[#D9A52E] shadow-sm shadow-[#D9A52E]/30"
                         : "border border-white/10"
@@ -521,33 +541,51 @@ export function SiteHeader({ user }: SiteHeaderProps) {
                 )}
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="flex items-center gap-1.5 rounded-full border border-[#D9A52E] bg-[#D9A52E] px-3.5 py-1.5 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/10 transition hover:bg-[#c49226]"
-              >
-                <SignIn size={15} weight="bold" />
-                <span>Masuk</span>
-              </Link>
+              <>
+                <Link
+                  href="/login"
+                  className="hidden md:flex items-center gap-1.5 rounded-full border border-[#D9A52E] bg-[#D9A52E] px-3.5 py-1.5 text-xs font-bold text-[#0A0A0A] shadow-md shadow-[#D9A52E]/10 transition hover:bg-[#c49226]"
+                >
+                  <SignIn size={15} weight="bold" />
+                  <span>Masuk</span>
+                </Link>
+                <Link
+                  href="/login"
+                  aria-label="Masuk ke Akun"
+                  title="Masuk ke Akun"
+                  className="flex md:hidden items-center justify-center h-7 w-7 rounded-full bg-white/10 text-white hover:bg-white/20 transition shrink-0"
+                >
+                  <SignIn size={14} weight="bold" />
+                </Link>
+              </>
             )}
           </div>
         </Container>
 
-        {/* Mobile Subnav Bar — Desain Floating Capsule Persis Seperti Desktop saat Aktif */}
+        {/* Mobile Subnav Bar — Kategori Scroll Horizontal ala iQIYI / WeTV */}
         <nav
           aria-label="Navigasi Kategori Seluler"
-          className="md:hidden flex items-center gap-2 overflow-x-auto px-4 py-2.5 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-xl scrollbar-none"
+          className="md:hidden flex items-center gap-1.5 overflow-x-auto px-4 py-2 border-t border-white/5 bg-[#0A0A0A]/95 backdrop-blur-xl scrollbar-none"
         >
-          {/* 1. Beranda / Home */}
+          {/* 1. Untuk Anda / For You */}
           <Link
             href="/"
             aria-current={homeMatch.isExactActive ? "page" : undefined}
             className={getMobileTabClass(homeMatch)}
           >
             <House size={13} weight={homeMatch.isExactActive ? "fill" : "regular"} className={homeMatch.isExactActive ? "text-[#D9A52E]" : ""} />
-            <span>Beranda</span>
+            <span>Untuk Anda</span>
           </Link>
 
-          {/* 2. Series */}
+          {/* 2. Trending */}
+          <Link
+            href="/catalog?sort=popularity.desc"
+            className="flex items-center gap-1 shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-[#A3A3A3] hover:text-[#F5F5F5] hover:bg-white/5 transition-all"
+          >
+            <span>Trending</span>
+          </Link>
+
+          {/* 3. Series */}
           <Link
             href="/catalog?type=tv"
             aria-current={tvMatch.isExactActive ? "page" : undefined}
@@ -557,7 +595,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <span>Series</span>
           </Link>
 
-          {/* 3. Movies */}
+          {/* 4. Movies */}
           <Link
             href="/catalog?type=movie"
             aria-current={movieMatch.isExactActive ? "page" : undefined}
@@ -567,7 +605,7 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <span>Movies</span>
           </Link>
 
-          {/* 4. Katalog */}
+          {/* 5. Katalog */}
           <Link
             href="/catalog"
             aria-current={catalogMatch.isExactActive ? "page" : undefined}
@@ -576,18 +614,6 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <Compass size={13} weight={catalogMatch.isExactActive ? "fill" : "regular"} className={catalogMatch.isExactActive ? "text-[#D9A52E]" : ""} />
             <span>Katalog</span>
           </Link>
-
-          {/* 5. VIP (jika bukan VIP) */}
-          {!user?.isVip && (
-            <Link
-              href="/pricing"
-              aria-current={vipMatch.isExactActive ? "page" : undefined}
-              className={getMobileTabClass(vipMatch, true)}
-            >
-              <Crown size={13} weight={vipMatch.isExactActive ? "fill" : "regular"} className={vipMatch.isExactActive ? "text-[#D9A52E]" : ""} />
-              <span>VIP</span>
-            </Link>
-          )}
 
           {/* 6. Bantuan */}
           <Link
