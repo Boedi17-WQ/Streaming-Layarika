@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, FormEvent, ChangeEvent } from
 import { Movie } from "@/types/movie";
 import { TmdbGenre } from "@/lib/tmdb/types";
 import { MovieCard } from "@/components/home/MovieCard";
+import { SearchResultListItem } from "./SearchResultListItem";
 import {
   MagnifyingGlass,
   X,
@@ -16,6 +17,8 @@ import {
   CaretRight,
   Spinner,
   Tag,
+  ListDashes,
+  SquaresFour,
 } from "@phosphor-icons/react";
 
 export type CatalogMediaType = "all" | "movie" | "tv";
@@ -50,6 +53,7 @@ export function CatalogBrowser({
   const [mediaType, setMediaType] = useState<CatalogMediaType>(initialType);
   const [selectedGenreId, setSelectedGenreId] = useState<number | null>(initialGenreId);
   const [currentPage, setCurrentPage] = useState<number>(initialPage);
+  const [viewMode, setViewMode] = useState<"list" | "grid">(initialQuery.trim().length > 0 ? "list" : "grid");
 
   // State Hasil Data
   const [movies, setMovies] = useState<Movie[]>(initialMovies);
@@ -509,17 +513,49 @@ export function CatalogBrowser({
           )}
         </div>
 
-        {/* Tombol Reset Jika Ada Filter Aktif */}
-        {(query || selectedGenreId || mediaType !== "all") && (
-          <button
-            type="button"
-            onClick={handleResetAll}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#A3A3A3] hover:text-[#D9A52E] transition"
-          >
-            <ArrowClockwise size={14} />
-            <span>Reset Semua Filter</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Toggle View Mode: List ala iQIYI/WeTV vs Grid Poster */}
+          <div className="flex items-center rounded-xl bg-[#141414] border border-[#262626] p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              title="Tampilan List (Daftar Sinematik Lengkap)"
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                viewMode === "list"
+                  ? "bg-emerald-500 text-black shadow-xs font-bold"
+                  : "text-[#888] hover:text-white"
+              }`}
+            >
+              <ListDashes size={14} weight="bold" />
+              <span>List</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("grid")}
+              title="Tampilan Grid (Poster)"
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition cursor-pointer ${
+                viewMode === "grid"
+                  ? "bg-[#D9A52E] text-black shadow-xs font-bold"
+                  : "text-[#888] hover:text-white"
+              }`}
+            >
+              <SquaresFour size={14} weight="bold" />
+              <span>Grid</span>
+            </button>
+          </div>
+
+          {/* Tombol Reset Jika Ada Filter Aktif */}
+          {(query || selectedGenreId || mediaType !== "all") && (
+            <button
+              type="button"
+              onClick={handleResetAll}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#A3A3A3] hover:text-[#D9A52E] transition cursor-pointer"
+            >
+              <ArrowClockwise size={14} />
+              <span className="hidden sm:inline">Reset Semua Filter</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 4. Tampilan Error State */}
@@ -570,61 +606,101 @@ export function CatalogBrowser({
         </div>
       )}
 
-      {/* 6. Grid Hasil Katalog / Pencarian */}
+      {/* 6. Tampilan Hasil Katalog / Pencarian (Mendukung List ala iQIYI/WeTV dan Grid Poster) */}
       {!errorMessage && (
         <div
-          className={`space-y-10 transition-opacity duration-200 ${
+          className={`space-y-6 sm:space-y-10 transition-opacity duration-200 ${
             isSearching ? "opacity-60 pointer-events-none" : "opacity-100"
           }`}
         >
-          {/* Mode "all" dengan pengelompokan Film & Serial TV jika keduanya ada */}
-          {mediaType === "all" ? (
-            <>
-              {/* Bagian Film */}
-              {movies.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <FilmReel size={20} className="text-[#D9A52E]" />
-                    <h2 className="text-lg sm:text-xl font-bold text-[#F5F5F5]">
-                      Film ({movies.length})
-                    </h2>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-                    {movies.map((movie) => (
-                      <MovieCard key={`movie-${movie.id}`} movie={movie} />
-                    ))}
-                  </div>
-                </div>
+          {viewMode === "list" ? (
+            /* Mode List: Menampilkan Daftar Lengkap Poster di Kiri, Judul, Info & Tombol Watch now di Kanan */
+            <div className="space-y-4 sm:space-y-6">
+              {mediaType === "all" ? (
+                <>
+                  {movies.map((movie) => (
+                    <SearchResultListItem
+                      key={`movie-${movie.id}`}
+                      movie={movie}
+                      query={query}
+                    />
+                  ))}
+                  {tvShows.map((tv) => (
+                    <SearchResultListItem
+                      key={`tv-${tv.id}`}
+                      movie={tv}
+                      query={query}
+                    />
+                  ))}
+                </>
+              ) : mediaType === "movie" ? (
+                movies.map((movie) => (
+                  <SearchResultListItem
+                    key={`movie-${movie.id}`}
+                    movie={movie}
+                    query={query}
+                  />
+                ))
+              ) : (
+                tvShows.map((tv) => (
+                  <SearchResultListItem
+                    key={`tv-${tv.id}`}
+                    movie={tv}
+                    query={query}
+                  />
+                ))
               )}
-
-              {/* Bagian Serial TV */}
-              {tvShows.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Television size={20} className="text-[#D9A52E]" />
-                    <h2 className="text-lg sm:text-xl font-bold text-[#F5F5F5]">
-                      Serial TV ({tvShows.length})
-                    </h2>
+            </div>
+          ) : (
+            /* Mode Grid Tradisional */
+            mediaType === "all" ? (
+              <>
+                {/* Bagian Film */}
+                {movies.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <FilmReel size={20} className="text-[#D9A52E]" />
+                      <h2 className="text-lg sm:text-xl font-bold text-[#F5F5F5]">
+                        Film ({movies.length})
+                      </h2>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+                      {movies.map((movie) => (
+                        <MovieCard key={`movie-${movie.id}`} movie={movie} />
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-                    {tvShows.map((tv) => (
+                )}
+
+                {/* Bagian Serial TV */}
+                {tvShows.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Television size={20} className="text-[#D9A52E]" />
+                      <h2 className="text-lg sm:text-xl font-bold text-[#F5F5F5]">
+                        Serial TV ({tvShows.length})
+                      </h2>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+                      {tvShows.map((tv) => (
+                        <MovieCard key={`tv-${tv.id}`} movie={tv} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Mode "movie" atau "tv" tunggal */
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
+                {mediaType === "movie"
+                  ? movies.map((movie) => (
+                      <MovieCard key={`movie-${movie.id}`} movie={movie} />
+                    ))
+                  : tvShows.map((tv) => (
                       <MovieCard key={`tv-${tv.id}`} movie={tv} />
                     ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            /* Mode "movie" atau "tv" tunggal */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5">
-              {mediaType === "movie"
-                ? movies.map((movie) => (
-                    <MovieCard key={`movie-${movie.id}`} movie={movie} />
-                  ))
-                : tvShows.map((tv) => (
-                    <MovieCard key={`tv-${tv.id}`} movie={tv} />
-                  ))}
-            </div>
+              </div>
+            )
           )}
         </div>
       )}

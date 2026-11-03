@@ -13,6 +13,7 @@ import {
   Television,
   SpinnerGap,
   ArrowRight,
+  Play,
 } from "@phosphor-icons/react";
 import { Movie } from "@/types/movie";
 
@@ -343,7 +344,7 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
                   <span>Mencari film & serial...</span>
                 </div>
               ) : liveResults.length > 0 ? (
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {liveResults.map((movie) => {
                     const isMovie = movie.mediaType === "movie";
 
@@ -351,49 +352,60 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
                       <div
                         key={movie.id}
                         onClick={() => handleSelectMovie(movie)}
-                        className="group flex items-center gap-3 rounded-xl p-2 hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-white/5"
+                        className="group flex items-center justify-between gap-3 rounded-xl p-2.5 hover:bg-white/5 cursor-pointer transition border border-transparent hover:border-emerald-500/20"
                       >
-                        {/* Poster Thumbnail */}
-                        <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-[#222]">
-                          {movie.posterPath ? (
-                            <Image
-                              src={movie.posterPath}
-                              alt={movie.title}
-                              fill
-                              unoptimized
-                              sizes="40px"
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-[#555]">
-                              {isMovie ? <FilmReel size={18} /> : <Television size={18} />}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Info Judul & Metadata */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="truncate text-sm font-semibold text-[#F5F5F5] group-hover:text-[#D9A52E] transition">
-                            {movie.title}
-                          </h4>
-                          <div className="flex items-center gap-2 text-xs text-[#737373] mt-0.5">
-                            <span className="rounded bg-white/10 px-1.5 py-0.2 text-[10px] font-semibold text-[#A3A3A3]">
-                              {isMovie ? "Film" : "Serial"}
-                            </span>
-                            {movie.releaseYear > 0 && <span>{movie.releaseYear}</span>}
-                            {movie.rating > 0 && (
-                              <span className="flex items-center gap-1 font-semibold text-[#D9A52E]">
-                                <Star size={11} weight="fill" />
-                                <span>{movie.rating.toFixed(1)}</span>
-                              </span>
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Poster Thumbnail dengan Badge Free */}
+                          <div className="relative aspect-[2/3] w-12 sm:w-14 shrink-0 overflow-hidden rounded-lg bg-[#222]">
+                            {movie.posterPath ? (
+                              <Image
+                                src={movie.posterPath}
+                                alt={movie.title}
+                                fill
+                                unoptimized
+                                sizes="56px"
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-[#555]">
+                                {isMovie ? <FilmReel size={18} /> : <Television size={18} />}
+                              </div>
                             )}
+                            <span className="absolute top-1 right-1 rounded-xs bg-emerald-500 px-1 py-0.2 text-[8px] font-black uppercase text-black">
+                              Free
+                            </span>
+                          </div>
+
+                          {/* Info Judul & Metadata */}
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-bold text-[#737373] uppercase tracking-wider block">
+                              {isMovie ? "Movie" : "Drama"}
+                            </span>
+                            <h4 className="truncate text-sm sm:text-base font-bold text-emerald-400 group-hover:text-emerald-300 transition">
+                              {movie.title}
+                            </h4>
+                            <div className="flex items-center gap-2 text-xs text-[#737373] mt-0.5">
+                              <span>Year: {movie.releaseYear || "—"}</span>
+                              {movie.genres && movie.genres.length > 0 && (
+                                <span className="truncate max-w-[120px]">• {movie.genres[0]}</span>
+                              )}
+                              {movie.rating > 0 && (
+                                <span className="flex items-center gap-0.5 font-semibold text-[#D9A52E]">
+                                  <Star size={11} weight="fill" />
+                                  <span>{movie.rating.toFixed(1)}</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <ArrowRight
-                          size={14}
-                          className="text-[#666] group-hover:text-[#D9A52E] group-hover:translate-x-0.5 transition shrink-0"
-                        />
+                        {/* Tombol Watch Now */}
+                        <div className="shrink-0 pl-1">
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-black shadow-xs transition group-hover:bg-emerald-400">
+                            <Play size={11} weight="fill" />
+                            <span>Watch</span>
+                          </span>
+                        </div>
                       </div>
                     );
                   })}
