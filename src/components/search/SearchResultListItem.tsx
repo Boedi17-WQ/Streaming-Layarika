@@ -6,9 +6,10 @@ import { Play, FilmReel, Television, Star } from "@phosphor-icons/react/dist/ssr
 interface SearchResultListItemProps {
   movie: Movie;
   query?: string;
+  onItemClick?: () => void;
 }
 
-export function SearchResultListItem({ movie, query }: SearchResultListItemProps) {
+export function SearchResultListItem({ movie, query, onItemClick }: SearchResultListItemProps) {
   const isMovie = movie.mediaType === "movie";
   const detailHref = isMovie ? `/movie/${movie.id}` : `/tv/${movie.id}`;
   const playHref = `${detailHref}#player-section`;
@@ -52,6 +53,7 @@ export function SearchResultListItem({ movie, query }: SearchResultListItemProps
         {/* Poster di Sebelah Kiri */}
         <Link
           href={detailHref}
+          onClick={onItemClick}
           className="relative aspect-[2/3] w-24 xs:w-28 sm:w-36 shrink-0 overflow-hidden rounded-xl bg-[#0a0a0a] border border-white/5 transition-transform duration-300 group-hover:scale-[1.02]"
         >
           {movie.posterPath ? (
@@ -88,7 +90,7 @@ export function SearchResultListItem({ movie, query }: SearchResultListItemProps
         <div className="flex flex-1 flex-col justify-between space-y-2 sm:space-y-3 min-w-0">
           <div className="space-y-1 sm:space-y-1.5">
             {/* Judul Film dengan Warna Hijau Terang */}
-            <Link href={detailHref}>
+            <Link href={detailHref} onClick={onItemClick}>
               <h3 className="text-base sm:text-xl md:text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors line-clamp-1">
                 {renderHighlightedTitle(movie.title, query)}
               </h3>
@@ -124,6 +126,7 @@ export function SearchResultListItem({ movie, query }: SearchResultListItemProps
             {isMovie ? (
               <Link
                 href={playHref}
+                onClick={onItemClick}
                 className="inline-flex items-center gap-1.5 sm:gap-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 px-3.5 py-1.5 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-bold text-black shadow-md shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-95"
               >
                 <Play size={13} weight="fill" />
@@ -134,6 +137,7 @@ export function SearchResultListItem({ movie, query }: SearchResultListItemProps
                 <div className="flex items-center gap-2">
                   <Link
                     href={playHref}
+                    onClick={onItemClick}
                     className="inline-flex items-center gap-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 px-3 py-1 sm:px-4 sm:py-1.5 text-xs font-bold text-black shadow-md shadow-emerald-500/20 transition-all active:scale-95"
                   >
                     <Play size={12} weight="fill" />
@@ -148,6 +152,7 @@ export function SearchResultListItem({ movie, query }: SearchResultListItemProps
                     <Link
                       key={`ep-${ep}`}
                       href={`${detailHref}?season=1&episode=${ep}#player-section`}
+                      onClick={onItemClick}
                       className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-[#202020] border border-white/5 text-[11px] sm:text-xs font-semibold text-[#D4D4D4] hover:bg-emerald-500 hover:text-black hover:font-bold hover:border-emerald-400 transition"
                       title={`Tonton Episode ${ep}`}
                     >

@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import {
   MagnifyingGlass,
   X,
   Trash,
   ClockCounterClockwise,
   SpinnerGap,
-  ArrowRight,
 } from "@phosphor-icons/react";
 import { Movie } from "@/types/movie";
 import { SearchResultListItem } from "./SearchResultListItem";
@@ -53,7 +51,6 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
-  const router = useRouter();
 
   const trimmedQuery = query.trim();
 
@@ -115,23 +112,13 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
     });
   };
 
-  // Eksekusi pencarian ke daftar film
+  // Eksekusi pencarian ke daftar film langsung
   const executeSearch = (searchTerm: string) => {
     const trimmed = searchTerm.trim();
     if (!trimmed) return;
 
     saveToHistory(trimmed);
     setQuery(trimmed);
-  };
-
-  // Navigasi ke halaman katalog penuh
-  const handleOpenFullSearch = (searchTerm: string) => {
-    const trimmed = searchTerm.trim();
-    if (!trimmed) return;
-
-    saveToHistory(trimmed);
-    onClose();
-    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
   // Handle submit form pencarian
@@ -154,7 +141,7 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
         if (res.ok && isMounted) {
           const data = await res.json();
           const items: Movie[] = data.allResults || [];
-          setLiveResults(items.slice(0, 6));
+          setLiveResults(items);
         }
       } catch (err) {
         console.error("Gagal melakukan pencarian instan:", err);
@@ -324,11 +311,11 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
               </div>
             </>
           ) : (
-            /* Bagian C: Hasil Pencarian Langsung (Live Instant Search) */
+            /* Bagian C: Hasil Pencarian Langsung Lengkap Real-Time */
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between pb-1 border-b border-white/5">
                 <span className="text-xs font-bold tracking-wider text-[#8A8A8A] uppercase">
-                  Hasil Terkait &quot;{query}&quot;
+                  Hasil Pencarian &quot;{query}&quot; {liveResults.length > 0 && `(${liveResults.length} judul)`}
                 </span>
                 {isLoading && (
                   <SpinnerGap size={15} className="animate-spin text-[#D9A52E]" />
@@ -336,9 +323,9 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
               </div>
 
               {isLoading && liveResults.length === 0 ? (
-                <div className="py-8 text-center text-xs text-[#737373] flex flex-col items-center gap-2">
+                <div className="py-12 text-center text-xs text-[#737373] flex flex-col items-center gap-2">
                   <SpinnerGap size={24} className="animate-spin text-[#D9A52E]" />
-                  <span>Mencari film & serial...</span>
+                  <span>Mencari film & serial dari katalog...</span>
                 </div>
               ) : liveResults.length > 0 ? (
                 <div className="space-y-4">
@@ -347,32 +334,14 @@ export function QuickSearchModal({ isOpen, onClose }: QuickSearchModalProps) {
                       key={movie.id}
                       movie={movie}
                       query={query}
+                      onItemClick={onClose}
                     />
                   ))}
-
-                  {/* Tombol Lihat Seluruh Hasil */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenFullSearch(query)}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-4 py-2.5 text-xs font-bold text-emerald-400 hover:bg-emerald-500/25 transition cursor-pointer"
-                    >
-                      <MagnifyingGlass size={14} weight="bold" />
-                      <span>Buka Hasil Lengkap di Halaman Katalog untuk &quot;{query}&quot;</span>
-                    </button>
-                  </div>
                 </div>
               ) : (
-                <div className="py-8 text-center text-xs text-[#737373] space-y-2">
-                  <p>Tidak ada film atau serial yang cocok dengan &quot;{query}&quot;.</p>
-                  <button
-                    type="button"
-                    onClick={() => executeSearch(query)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#D9A52E] hover:underline cursor-pointer"
-                  >
-                    <span>Cari di seluruh katalog</span>
-                    <ArrowRight size={12} />
-                  </button>
+                <div className="py-12 text-center text-xs text-[#737373] space-y-1.5">
+                  <p className="text-sm font-medium text-[#A3A3A3]">Tidak ditemukan film atau serial untuk &quot;{query}&quot;</p>
+                  <p className="text-xs text-[#737373]">Coba gunakan kata kunci atau ejaan judul lainnya.</p>
                 </div>
               )}
             </div>
