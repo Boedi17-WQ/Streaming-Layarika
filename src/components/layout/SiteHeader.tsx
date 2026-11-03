@@ -588,16 +588,6 @@ export function SiteHeader({ user }: SiteHeaderProps) {
             <Compass size={13} weight={catalogMatch.isExactActive ? "fill" : "regular"} className={catalogMatch.isExactActive ? "text-[#D9A52E]" : ""} />
             <span>Katalog</span>
           </Link>
-
-          {/* 5. Bantuan */}
-          <Link
-            href="/help"
-            aria-current={helpMatch.isExactActive ? "page" : undefined}
-            className={getMobileTabClass(helpMatch)}
-          >
-            <Question size={13} weight={helpMatch.isExactActive ? "fill" : "regular"} className={helpMatch.isExactActive ? "text-[#D9A52E]" : ""} />
-            <span>Bantuan</span>
-          </Link>
         </nav>
       </header>
 
