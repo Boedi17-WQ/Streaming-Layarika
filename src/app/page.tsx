@@ -26,6 +26,7 @@ export default async function HomePage() {
   const hasTmdb = isTmdbConfigured();
 
   let heroMovie = MOCK_HERO_MOVIE;
+  let featuredHeroMovies = MOCK_FEATURED_MOVIES.slice(0, 6);
   let popularMovies = MOCK_FEATURED_MOVIES;
   let topRatedMovies = MOCK_FEATURED_MOVIES.slice(0, 4);
   let nowPlayingMovies = MOCK_FEATURED_MOVIES;
@@ -53,9 +54,13 @@ export default async function HomePage() {
 
       if (popMoviesRes.length > 0) {
         popularMovies = popMoviesRes.map(mapTmdbMovieToMovie);
-        // Pilih film pertama dengan backdrop yang bagus sebagai sorotan hero
-        const featuredRaw = popMoviesRes.find((m) => m.backdrop_path) || popMoviesRes[0];
-        heroMovie = mapTmdbMovieToMovie(featuredRaw);
+        // Saring minimal 5 film populer dengan backdrop berkualitas untuk slider hero
+        const validBackdropMovies = popularMovies.filter((m) => Boolean(m.backdropPath));
+        featuredHeroMovies =
+          validBackdropMovies.length >= 5
+            ? validBackdropMovies.slice(0, 8)
+            : popularMovies.slice(0, 6);
+        heroMovie = featuredHeroMovies[0] || popularMovies[0];
       }
 
       if (topMoviesRes.length > 0) {
@@ -84,8 +89,12 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-12 sm:space-y-16 pb-20">
-      {/* 1. Hero Section */}
-      <HeroSection featuredMovie={heroMovie} isTmdbData={hasTmdb} />
+      {/* 1. Hero Section Slider (Minimal 5 Film Populer) */}
+      <HeroSection
+        featuredMovie={heroMovie}
+        movies={featuredHeroMovies}
+        isTmdbData={hasTmdb}
+      />
 
       {/* 2. Container Katalog Utama */}
       <Container className="space-y-14">
