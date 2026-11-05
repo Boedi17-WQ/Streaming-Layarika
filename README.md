@@ -7,7 +7,58 @@
 
 ## 📌 Deskripsi Proyek
 
-LayarRika adalah aplikasi full-stack modern yang dikembangkan untuk menyajikan pengalaman eksplorasi katalog sinematik dan pemutaran video legal yang mulus. Menggunakan arsitektur **Next.js 16 App Router** terkini dengan tema warna gelap elegan (*cinematic dark theme*) beraksen emas (*golden primary*).
+LayarRika adalah aplikasi full-stack modern yang dikembangkan untuk menyajikan pengalaman eksplorasi katalog sinematik dan pemutaran video legal yang mulus. Menggunakan arsitektur **Next.js 16 App Router** terkini dengan tema warna gelap elegan (*cinematic dark theme*) beraksen emas (*golden primary*) dan hijau zamrud (*emerald accent*).
+
+---
+
+## 🌟 Fitur Unggulan & Pengalaman Pengguna (Key Features & UI)
+
+### 1. 🎬 Hero Banner Sinematik dengan Slider Otomatis (3 Detik)
+- **Perputaran Otomatis (Auto-Slide)**: Banner berputar secara mulus dan berulang tanpa henti (*infinite loop*) setiap **3 detik**, memberikan suasana bioskop yang hidup saat pengguna mengunjungi halaman utama.
+- **Indikator Pagination & Navigasi**: Dilengkapi bilah kemajuan emas (*golden indicator bar*), nomor slide aktif, dan tombol panah navigasi (*previous / next*) dengan tata letak proporsional yang tidak bertabrakan dengan judul atau informasi rilis film, baik pada layar desktop maupun mobile.
+- **Aksi Cepat**: Tombol *Mulai Nonton* langsung mengarahkan pengguna ke pemutar video atau detail judul yang sedang disorot.
+
+### 2. 🔍 Pencarian Interaktif Real-Time (Quick Search Modal)
+- **Desain Modern ala Platform Streaming Asia**: Mengadaptasi pengalaman pencarian cepat dan elegan seperti aplikasi *iQIYI* dan *WeTV*.
+- **Pencarian Katalog Instan (*Real-Time Debounced*)**: Menggunakan jeda debounce 250ms untuk memuat dan menampilkan seluruh hasil film dan serial TV dari katalog secara langsung saat pengguna mengetik, tanpa perlu menekan tombol submit tambahan atau memotong hasil.
+- **Riwayat Pencarian (*Search History*)**: Kata kunci yang dicari tersimpan otomatis di `localStorage` peramban, dilengkapi tombol hapus per item serta pembersihan riwayat total sekali klik (*clear all*).
+- **Pencarian Populer (*Popular Searches*)**: Menampilkan tren pencarian teratas dengan penomoran berperingkat; peringkat 1, 2, dan 3 disorot dengan warna hijau zamrud terang (*emerald*).
+- **Tampilan Daftar Hasil (*Asian Streaming List Item*)**:
+  - Poster film berasio 2:3 dengan badge hijau mencolok **Free** dan rating bintang emas.
+  - Judul film beraksen hijau terang dengan efek penyorotan kata kunci (*keyword highlight*) yang cocok secara dinamis.
+  - Rincian metadata informatif: Tahun rilis, Genre, dan Sinopsis singkat (*Story*).
+  - Tombol aksi **Watch now** untuk film, serta tombol pintasan episode langsung **1 – 9** untuk serial drama/TV.
+
+### 3. 📱 Antarmuka Mobile First yang Ramping & Responsif
+- **Tata Letak Khusus Layar Ponsel**: Penataan tata letak header dan navbar bawah yang ramping, bebas tombol redundan, dan memaksimalkan ruang pandang konten di perangkat ponsel.
+- **Kategori Cepat Mobile**: Navigasi tab geser horizontal yang fokus pada 4 menu esensial: **Beranda**, **Series**, **Movies**, dan **Katalog** dengan status aktif bernuansa emas.
+- **Drawer Menu & Modal Adaptif**: Seluruh modal interaktif (Pencarian, Langganan VIP, Bantuan, Profil) dirancang pas dengan layar mobile (*mobile viewport friendly*) dengan kontrol sentuh yang nyaman.
+
+### 4. 🎛️ Eksplorasi Katalog Dinamis (Grid & List View Mode)
+- **Switch Tampilan Fleksibel**: Pengguna dapat dengan leluasa beralih antara mode tampilan **Grid** (kartu poster vertikal sinematik) dan mode tampilan **List** (kartu horizontal informatif lengkap dengan episode bar) di halaman `/catalog` maupun `/search`.
+- **Sistem Filter Multi-Kriteria**:
+  - Pilihan jenis tayangan: *Semua*, *Film (Movies)*, dan *Serial (TV Shows)*.
+  - Filter genre resmi TMDB (Aksi, Petualangan, Drama, Fiksi Ilmiah, Komedi, Horor, dll).
+  - Pengurutan dinamis berdasarkan *Paling Populer*, *Rating Tertinggi*, dan *Tanggal Rilis Terbaru*.
+  - Paginasi sisi server yang responsif dan mempertahankan parameter URL.
+
+### 5. 🎨 Identitas Visual & Branding Kustom LayarRika
+- **Logo Resmi LayarRika**: Ikon gulungan pita film sinematik dalam siluet gelembung obrolan bernuansa kuning emas, melambangkan narasi cerita film yang hidup.
+- **Integrasi Favicon & App Icons**: Terpasang konsisten pada favicon browser, `icon.png` (resolusi tinggi), dan `apple-icon.png`.
+- **Palet Warna Sinematik**: Latar belakang hitam pekat (*obsidian dark #0A0A0A* & *#121212*) dipadukan aksen emas (*gold #D9A52E*) dan hijau zamrud (*emerald #22c55e*).
+
+### 6. 💳 Sistem Akses Berjenjang & Integrasi Pembayaran Midtrans
+- **Hak Akses Free vs VIP**: Pembatasan kuota harian untuk pengguna gratis serta akses tanpa batas dan pemutaran video prioritas bagi pelanggan VIP.
+- **Payment Gateway Midtrans Snap**: Pembayaran otomatis melalui berbagai metode lokal Indonesia (Virtual Account BCA, BNI, BRI, Permata, serta QRIS).
+- **Webhook Notifikasi Real-Time**: Sinkronisasi instan status transaksi pada `/api/midtrans/notification` dengan verifikasi signature hash SHA-512 yang aman dan modal simulasi sandbox interaktif.
+
+### 7. 📺 Pemutar Video Cerdas Multi-Provider
+- **Multi-Source Support**: Mendukung pemutaran HLS (`.m3u8`), file MP4 legal (seperti open-movie berlisensi Creative Commons), serta provider fallback embed resmi.
+- **Navigasi Episode Dinamis**: Navigasi season dan pemilihan episode serial drama yang langsung berlabuh mulus ke area pemutar video (`#player-section`).
+
+### 8. 🛡️ Portal Administrasi Sinematik (`/admin`)
+- **Manajemen Aset Video CRUD**: Tambah, edit, dan hapus URL sumber video dengan uji coba pemutaran langsung (*live player preview*).
+- **Manajemen Pengguna & Otoritas**: Promosi hak akses (USER ke ADMIN), serta aktivasi manual status VIP pengguna.
 
 ### Pencapaian Tahap:
 - **Tahap 0 (Selesai)**: Audit mendalam repositori referensi Streambert, identifikasi batasan lisensi GPL-3.0 dan inkompatibilitas Electron desktop, serta perancangan cetak biru arsitektur web mandiri.
@@ -21,6 +72,7 @@ LayarRika adalah aplikasi full-stack modern yang dikembangkan untuk menyajikan p
 - **Tahap 8 (Selesai)**: Portal Admin Sinematik (`/admin`), manajemen aset video legal CRUD (HLS / MP4), player preview test interaktif, manajemen pengguna & promosi wewenang (USER/ADMIN), serta aktivasi manual VIP.
 - **Tahap 9 (Selesai)**: Testing menyeluruh 19 skenario akses kuota tontonan, validasi Zod, pencegahan race-condition, dan proteksi role guard.
 - **Tahap 10 (Selesai)**: Kesiapan Deployment Publik ke Vercel & Neon Production Database, endpoint monitoring kesehatan server & database (`/api/health`), konfigurasi webhook Midtrans resmi, audit environment variables produksi, pengerasan CSP, dan panduan lengkap ([DEPLOYMENT.md](file:///d:/kuliah/semester5/rpl/ProjectLayarRika/DEPLOYMENT.md)).
+- **Tahap 11 (Selesai)**: Penyempurnaan UI/UX Sinematik Lanjutan (Hero banner auto-slider 3 detik, modal pencarian instan real-time ala iQIYI/WeTV dengan riwayat & pencarian populer, layout mobile-first yang bersih, integrasi branding logo kustom LayarRika, serta mode beralih tampilan Grid dan List di katalog).
 
 ---
 
@@ -224,6 +276,7 @@ npm run build
 - [x] **Tahap 8**: Panel Admin Pengelolaan Aset Video & Episode (`/admin`).
 - [x] **Tahap 9**: Testing Menyeluruh (Unit, Integration, E2E) & Security Hardening.
 - [x] **Tahap 10**: Deployment Publik ke Vercel & Neon Production Database ([Panduan Deployment](file:///d:/kuliah/semester5/rpl/ProjectLayarRika/DEPLOYMENT.md)).
+- [x] **Tahap 11**: Penyempurnaan UI/UX Sinematik Lanjutan (Quick Search Modal Real-Time ala iQIYI/WeTV, Hero Slider Otomatis 3 Detik, Desain Mobile Streamlined, Branding Logo Baru, dan Mode Tampilan List/Grid).
 
 ---
 *Proyek Rekayasa Perangkat Lunak (RPL) — LayarRika 2026*
